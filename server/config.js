@@ -22,7 +22,7 @@ for (const dir of [DATA_DIR, UPLOAD_DIR, THUMB_DIR, TMP_DIR]) {
   fs.mkdirSync(dir, { recursive: true });
 }
 
-export const PORT = Number(process.env.PORT || 3000);
+export const PORT = Number(process.env.PORT || 8080);
 export const HOST = process.env.HOST || '0.0.0.0';
 export const SESSION_SECRET =
   process.env.SESSION_SECRET || 'baekdu-icca-2026-change-me-in-env';
