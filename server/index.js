@@ -1,5 +1,7 @@
 import express from 'express';
 import session from 'express-session';
+import fs from 'node:fs';
+import path from 'node:path';
 import os from 'node:os';
 import { PORT, HOST, SESSION_SECRET, PUBLIC_DIR, ADMIN_ID } from './config.js';
 import { SqliteStore } from './lib/session-store.js';
@@ -50,8 +52,10 @@ app.use('/api/admin', adminRoutes);
  *  - 그 외(HTML·CSS·JS) : no-cache — 매번 서버에 확인하고 안 바뀌었으면 304.
  *    앱을 고쳤을 때 참가자 휴대폰에 바로 반영되도록 하기 위함.
  */
+app.get(['/', '/index.html'], sendIndex);
+
 app.use(express.static(PUBLIC_DIR, {
-  index: 'index.html',
+  index: false,
   etag: true,
   lastModified: true,
   setHeaders(res, filePath) {
@@ -63,9 +67,21 @@ app.use(express.static(PUBLIC_DIR, {
 // SPA fallback
 app.get('*', (req, res, next) => {
   if (req.path.startsWith('/api/')) return next();
-  res.setHeader('Cache-Control', 'no-cache');
-  res.sendFile('index.html', { root: PUBLIC_DIR });
+  sendIndex(req, res);
 });
+
+/**
+ * index.html 을 내보내면서 og: 태그의 __ORIGIN__ 을 실제 접속 주소로 바꾼다.
+ * 미리보기 이미지 주소는 상대경로면 카톡이 못 읽으므로 절대주소여야 하는데,
+ * 이 앱은 와이파이 IP·터널 주소가 그때그때 달라져서 미리 박아둘 수가 없다.
+ * (터널 뒤에서도 맞게 나오도록 app.set('trust proxy') 로 원래 프로토콜을 본다.)
+ */
+function sendIndex(req, res) {
+  const origin = `${req.protocol}://${req.get('host')}`;
+  const html = fs.readFileSync(path.join(PUBLIC_DIR, 'index.html'), 'utf8');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.type('html').send(html.replaceAll('__ORIGIN__', origin));
+}
 
 app.use((req, res) => res.status(404).json({ error: '없는 경로입니다.' }));
 
