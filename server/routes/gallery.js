@@ -66,15 +66,18 @@ router.get('/gallery', (req, res) => {
 /** 방문지별 내 진행 상황 + 전체 통계 */
 router.get('/progress', (req, res) => {
   const mine = db.prepare(
-    `SELECT place_slug, mission, COUNT(*) c FROM uploads WHERE user_id = ? GROUP BY place_slug, mission`
+    `SELECT place_slug, mission, COUNT(*) c, MAX(id) AS id
+     FROM uploads WHERE user_id = ? GROUP BY place_slug, mission`
   ).all(req.user.id);
   const all = db.prepare(
     `SELECT place_slug, COUNT(*) c, COUNT(DISTINCT user_id) people FROM uploads GROUP BY place_slug`
   ).all();
 
   const mineMap = {};
+  const slotMap = {};   // 미션 칸에 현재 들어있는 업로드 id (교체 대상 미리보기용)
   for (const r of mine) {
     (mineMap[r.place_slug] ||= {})[r.mission] = r.c;
+    (slotMap[r.place_slug] ||= {})[r.mission] = r.id;
   }
   const allMap = Object.fromEntries(all.map((r) => [r.place_slug, { count: r.c, people: r.people }]));
 
@@ -84,6 +87,7 @@ router.get('/progress', (req, res) => {
     return {
       slug: p.slug,
       mine: m,
+      slots: slotMap[p.slug] || {},
       myCount: Object.values(m).reduce((a, b) => a + b, 0),
       conquered: done === CONQUER_KEYS.length,
       missionDone: done,

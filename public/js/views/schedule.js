@@ -118,13 +118,14 @@ export function showPlace(slug) {
           ${missions.map((m) => {
             const c = pr.mine?.[m.key] || 0;
             return `<div class="mtile ${c ? 'done' : ''}" data-m="${m.key}">
-              ${c ? `<span class="cnt">${c}</span>` : ''}
+              ${c ? '<span class="cnt">교체</span>' : ''}
               <div class="e">${m.emoji}</div><b>${esc(m.short)}</b>
               <small>+${Math.round(m.points * p.boost)}</small></div>`;
           }).join('')}
         </div>
       </div>
-      <div class="hint">이 방문지 전체 ${pr.all.count}장 · ${pr.all.people}명 참여
+      <div class="hint">미션 한 칸에는 <b>가장 좋은 것 한 장만</b> 남습니다. 다시 올리면 교체됩니다.<br>
+        이 방문지 전체 ${pr.all.count}장 · ${pr.all.people}명 참여
         ${pr.conquered ? ' · <b style="color:var(--ok)">정복 완료 🏔️</b>' : ''}</div>`,
     foot: `<button class="btn primary block" id="pl-up">📸 여기 사진 올리기</button>`,
   });

@@ -39,6 +39,8 @@ export function openUploader({ placeSlug = null, mission = null } = {}) {
     const p = S.placeBySlug.get(sel.place);
     const n = need();
     const total = sel.tags.size + 1;
+    // 이 미션 칸에 이미 들어 있는 자료 (있으면 교체됨)
+    const slotId = progressOf(sel.place).slots?.[sel.mission] || null;
 
     body.innerHTML = `
       <div class="field">
@@ -57,15 +59,26 @@ export function openUploader({ placeSlug = null, mission = null } = {}) {
         <label>🎯 어떤 미션인가요?</label>
         <div class="mgrid" id="u-missions">
           ${missions.map((mm) => {
-            const done = progressOf(sel.place).mine?.[mm.key] || 0;
-            return `<div class="mtile ${mm.key === sel.mission ? 'done' : ''}" data-m="${mm.key}">
-              ${done ? `<span class="cnt">${done}</span>` : ''}
+            const filled = !!progressOf(sel.place).mine?.[mm.key];
+            const on = mm.key === sel.mission;
+            return `<div class="mtile ${on ? 'done' : ''}" data-m="${mm.key}">
+              ${filled ? '<span class="cnt">완료</span>' : ''}
               <div class="e">${mm.emoji}</div><b>${esc(mm.short)}</b>
               <small>${mm.points ? `+${mm.points}` : '운영진'}</small></div>`;
           }).join('')}
         </div>
         <span class="hint">${esc(m.desc || '')}</span>
       </div>
+
+      ${slotId ? `
+      <div class="alert warn">
+        <img class="thumb" src="/api/thumb/${slotId}" alt="" style="width:52px;height:52px">
+        <div>
+          <b>이 칸에는 이미 올린 것이 있습니다</b>
+          <p>미션 한 칸에는 <b>한 장만</b> 남습니다. 새로 올리면 이 사진(영상)이 <b>교체</b>됩니다.
+          가장 마음에 드는 것 하나만 골라주세요.</p>
+        </div>
+      </div>` : ''}
 
       <div class="field">
         <label>📸 파일</label>
@@ -199,8 +212,12 @@ export function openUploader({ placeSlug = null, mission = null } = {}) {
     } else {
       const m = missionMeta(sel.mission);
       const p = S.placeBySlug.get(sel.place);
+      const filled = !!progressOf(sel.place).slots?.[sel.mission];
       const pts = Math.round((m.points || 0) * (p?.boost || 1)) + sel.tags.size * 5 * (p?.boost || 1);
-      goBtn.innerHTML = pts ? `올리기 <span style="opacity:.85">+${Math.round(pts)}점</span>` : '올리기';
+      const label = filled ? '이 사진으로 교체하기' : '올리기';
+      goBtn.innerHTML = pts && !filled
+        ? `${label} <span style="opacity:.85">+${Math.round(pts)}점</span>`
+        : label;
     }
   }
 

@@ -102,4 +102,14 @@ CREATE TABLE IF NOT EXISTS sessions (
 );
 `);
 
+/**
+ * 가벼운 마이그레이션 — 이미 만들어진 DB에도 새 컬럼을 안전하게 추가한다.
+ * (CREATE TABLE IF NOT EXISTS 만으로는 컬럼 추가가 반영되지 않으므로)
+ */
+function addColumn(table, column, decl) {
+  const has = db.prepare(`PRAGMA table_info(${table})`).all().some((c) => c.name === column);
+  if (!has) db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${decl}`);
+}
+addColumn('uploads', 'updated_at', 'TEXT');   // 미션 슬롯을 교체한 시각
+
 export default db;

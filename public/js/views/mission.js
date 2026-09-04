@@ -23,6 +23,7 @@ export default async function renderMission(host, args) {
       <h2>🎯 사진 미션</h2>
       <p class="small muted" style="margin:0 0 12px">
         방문지마다 <b>독사진 · 2인 · 3인 · 4인 이상</b> 네 가지를 채우면 <b>정복 +100점</b>!<br>
+        미션 한 칸에는 <b>한 장만</b> 남습니다. 가장 잘 나온 것으로 언제든 교체하세요.<br>
         여행이 끝나면 이 분류 그대로 추억 쇼츠를 만듭니다.
       </p>
       <div class="scorebar">

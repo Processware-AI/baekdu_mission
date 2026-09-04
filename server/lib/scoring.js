@@ -52,6 +52,12 @@ export function awardForUpload({ userId, uploadId, placeSlug, mission, taggedIds
     return { total: 0, events };
   }
 
+  // 0) 교체(같은 미션 칸에 다시 올림)인 경우 이전 업로드분 점수를 걷어낸다.
+  //    선착순·정복 등 보너스는 그대로 두어 이미 받은 점수가 사라지지 않게 한다.
+  db.prepare(
+    `DELETE FROM score_events WHERE upload_id = ? AND kind IN ('upload','tagged')`
+  ).run(uploadId);
+
   // 1) 기본 점수
   const base = Math.round((BASE[mission] ?? 0) * boost);
   const tagCount = Math.min(taggedIds.length, RULES.tagBonusMaxPeople);

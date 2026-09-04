@@ -180,6 +180,41 @@ async function main() {
     });
     ok(adminOnly.status === 403, '일반 참가자는 단체사진 업로드 불가');
 
+    console.log('\n▶ 미션 한 칸 = 한 장 (재업로드 시 교체)');
+    const before = await req('GET', '/api/gallery?place=seopa-cheonji&mission=solo');
+    const oldId = before.data.items[0].id;
+    const scoreBefore = (await req('GET', '/api/me/summary')).data.score;
+
+    const again = await req('POST', '/api/uploads', {
+      form: fd({ file: JPEG, name: 'solo2.jpg', type: 'image/jpeg', thumb: JPEG,
+        fields: { placeSlug: 'seopa-cheonji', mission: 'solo', caption: '더 잘 나온 컷', tags: [], clientUid: 'r1' } }),
+    });
+    ok(again.data.replaced === true, '같은 미션 칸에 다시 올리면 교체로 처리');
+    ok(again.data.id === oldId, '기록은 같은 행을 유지 (id 불변)');
+
+    const after = await req('GET', '/api/gallery?place=seopa-cheonji&mission=solo');
+    ok(after.data.total === 1, `독사진은 항상 1장만 남음 (${after.data.total})`);
+    ok(after.data.items[0].caption === '더 잘 나온 컷', '새 자료로 내용이 바뀜');
+
+    const scoreAfter = (await req('GET', '/api/me/summary')).data.score;
+    ok(scoreAfter === scoreBefore, `교체해도 점수는 그대로 (${scoreBefore} → ${scoreAfter})`);
+
+    const soloDir = path.join(TEST_DIR, 'uploads', '2일차_02_백두산 천지 (서파) · 경계비', '01_독사진');
+    const soloFiles = fs.existsSync(soloDir) ? fs.readdirSync(soloDir) : [];
+    ok(soloFiles.length === 1, `디스크에도 파일 1개만 남음 (${soloFiles.length}개)`, soloFiles.join(', '));
+
+    // 운영진의 단체사진·브이로그는 여러 장 필요하므로 교체 대상이 아니다
+    await req('POST', '/api/auth/login', { json: { name: 'admin', password: 'testpw123' } });
+    for (const uid of ['g1', 'g2']) {
+      await req('POST', '/api/uploads', {
+        form: fd({ file: JPEG, name: `${uid}.jpg`, type: 'image/jpeg',
+          fields: { placeSlug: 'bukpa-cheonji', mission: 'group', tags: [], clientUid: uid } }),
+      });
+    }
+    const grpShots = await req('GET', '/api/gallery?place=bukpa-cheonji&mission=group');
+    ok(grpShots.data.total === 2, `운영진 단체사진은 여러 장 유지 (${grpShots.data.total})`);
+    await req('POST', '/api/auth/login', { json: { name: '박화서', password: '01087503934' } });
+
     console.log('\n▶ 집계');
     const sum = await req('GET', '/api/me/summary');
     //  독사진 20 + 선착순 60 | 2인 (25+5)×2=60 | 3인 (45+10)×2=110
@@ -220,7 +255,9 @@ async function main() {
 
     await req('POST', '/api/auth/login', { json: { name: 'admin', password: 'testpw123' } });
     const stats = await req('GET', '/api/admin/stats');
-    ok(stats.status === 200 && stats.data.totals.uploads === 5, '운영진 현황 조회');
+    // 박화서 5칸(독/2인/3인/4인+/영상) + 운영진 단체사진 2장
+    ok(stats.status === 200 && stats.data.totals.uploads === 7,
+      `운영진 현황 조회 (총 ${stats.data.totals?.uploads}건)`);
     ok(stats.data.silent.length === 74, `미참여자 집계 74명 (${stats.data.silent.length})`);
 
     const ap = await req('GET', '/api/admin/participants');

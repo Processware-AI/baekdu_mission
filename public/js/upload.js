@@ -185,6 +185,11 @@ export async function runQueue({ silent = false } = {}) {
 
 function announce(res, job) {
   if (res.duplicate) return;
+  if (res.replaced) {
+    // 미션 한 칸에는 한 장만 남는다 — 점수는 그대로, 자료만 바뀜
+    toast('🔄 <b>교체 완료</b><br>이 미션 칸의 사진을 새것으로 바꿨습니다.', 'ok', 3000);
+    return;
+  }
   const bonus = (res.events || []).filter((e) => e.kind !== 'upload');
   let msg = `✅ 업로드 완료 <b>+${res.points}점</b>`;
   if (bonus.length) msg += `<br>${bonus.map((b) => `🎉 ${b.memo} +${b.points}`).join('<br>')}`;
