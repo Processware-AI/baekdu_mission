@@ -374,3 +374,17 @@ textarea{resize:vertical; min-height:70px; line-height:1.5}
 /* 일정 타임라인에서 사진이 있는 구간 */
 .tl .stop .body{display:flex; gap:10px; align-items:flex-start}
 .tl .stop .body .txt{flex:1; min-width:0}
+
+/* 로그인 화면 가운데 플랭카드 */
+.login-banner{
+  width:100%; border-radius:14px; display:block;
+  box-shadow:0 12px 30px -14px rgba(0,0,0,.6);
+  border:1px solid rgba(255,255,255,.16);
+}
+.login .brand .m{font-size:44px}
+.login .brand h1{margin:4px 0 0}
+/* 화면이 작은 기기에서는 위아래로 스크롤되게 (세로 중앙 고정 해제) */
+@media (max-height: 700px){
+  .login{align-content:start; padding-top:22px}
+  .login .brand .m{font-size:34px}
+}

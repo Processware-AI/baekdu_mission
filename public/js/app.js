@@ -118,14 +118,17 @@ function wireQueueBar() {
 }
 
 // ── 로그인 화면 ────────────────────────────────────────────────
-function loginScreen(trip) {
+function loginScreen() {
   root.innerHTML = `
     <div class="login">
       <div class="brand">
         <div class="m">🏔️</div>
-        <h1>${esc(trip?.title || '백두산 3박 4일')}</h1>
-        <p>${esc(trip?.org || 'ICCA 산악회')} · 2026.09.10 ~ 09.13</p>
+        <h1>여행 안내 · 사진 미션</h1>
       </div>
+
+      <img class="login-banner" src="/img/banner.jpg"
+           alt="백두산 천지를 품고, 우정을 담다 — 백두산 3박 4일 특별산행 2026년 09월 10일(목) ~ 13일(일)">
+
       <form class="panel" id="lf">
         <div class="field">
           <label for="ln">이름</label>
@@ -196,8 +199,7 @@ async function start() {
     if (user) {
       await start();
     } else {
-      const trip = await api.get('/api/trip').catch(() => null);
-      loginScreen(trip);
+      loginScreen();
     }
   } catch (e) {
     root.innerHTML = `<div style="padding:40px 24px;text-align:center">

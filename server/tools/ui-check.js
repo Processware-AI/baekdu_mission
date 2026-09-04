@@ -68,7 +68,11 @@ async function main() {
     console.log('\n▶ 로그인 화면');
     await page.goto(BASE, { waitUntil: 'networkidle' });
     ok(await page.locator('.login').isVisible(), '로그인 화면 표시');
-    ok((await page.locator('.brand h1').textContent()).includes('백두산'), '여행 제목 표시');
+    const bannerOk = await page.evaluate(() => {
+      const i = document.querySelector('.login-banner');
+      return !!i && i.complete && i.naturalWidth > 0;
+    });
+    ok(bannerOk, '로그인 화면에 플랭카드 이미지 표시');
     await shot('01-login');
 
     await page.fill('#ln', '박화서');
