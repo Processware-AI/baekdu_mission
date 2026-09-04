@@ -88,7 +88,33 @@ function localIPs() {
   return out;
 }
 
-app.listen(PORT, HOST, () => {
+function openBrowser() {
+  if (process.env.OPEN_BROWSER !== '1') return;
+  import('node:child_process').then(({ exec }) => {
+    const url = `http://localhost:${PORT}`;
+    const cmd = process.platform === 'win32' ? `start "" "${url}"`
+      : process.platform === 'darwin' ? `open "${url}"` : `xdg-open "${url}"`;
+    exec(cmd, () => {});
+  });
+}
+
+/** 이미 같은 포트에서 이 앱이 돌고 있는지 확인 */
+async function isOurAppRunning() {
+  try {
+    const res = await fetch(`http://127.0.0.1:${PORT}/api/trip`, {
+      signal: AbortSignal.timeout(2500),
+    });
+    if (!res.ok) return false;
+    const data = await res.json();
+    return typeof data?.title === 'string' && data.title.includes('백두산');
+  } catch {
+    return false;
+  }
+}
+
+const server = app.listen(PORT, HOST);
+
+server.on('listening', () => {
   console.log('');
   console.log('  🏔️  ICCA 산악회 백두산 여행 앱');
   console.log('  ─────────────────────────────────────────');
@@ -100,16 +126,50 @@ app.listen(PORT, HOST, () => {
   }
   console.log('');
   console.log('  참가자 로그인: 이름 + 휴대폰 번호(숫자만)');
-  console.log('  종료: Ctrl+C');
+  console.log('  종료: 이 창을 닫거나 Ctrl+C');
   console.log('');
+  openBrowser();
 });
 
-// 시작하기.bat 으로 실행했을 때 브라우저를 자동으로 열어준다
-if (process.env.OPEN_BROWSER === '1') {
-  import('node:child_process').then(({ exec }) => {
-    const url = `http://localhost:${PORT}`;
-    const cmd = process.platform === 'win32' ? `start "" "${url}"`
-      : process.platform === 'darwin' ? `open "${url}"` : `xdg-open "${url}"`;
-    exec(cmd, () => {});
-  });
-}
+server.on('error', async (err) => {
+  if (err.code !== 'EADDRINUSE') {
+    console.error('');
+    console.error(`  ❌ 서버를 시작할 수 없습니다: ${err.message}`);
+    console.error('');
+    process.exit(1);
+  }
+
+  console.log('');
+  if (await isOurAppRunning()) {
+    // 이미 켜져 있는 것뿐이니 안내만 하고 브라우저를 열어준다
+    console.log('  ✅ 백두산 여행 앱이 이미 실행 중입니다.');
+    console.log('');
+    console.log(`  이 PC        : http://localhost:${PORT}`);
+    for (const ip of localIPs()) console.log(`  같은 와이파이 : http://${ip}:${PORT}`);
+    console.log('');
+    console.log('  창을 두 개 띄울 필요는 없습니다. 이 창은 닫으셔도 됩니다.');
+    console.log('  (앱을 완전히 끄려면 먼저 켜져 있던 검은 창을 닫으세요.)');
+    console.log('');
+    openBrowser();
+    process.exit(0);
+  }
+
+  console.error(`  ❌ ${PORT}번 포트를 다른 프로그램이 쓰고 있습니다.`);
+  console.error('');
+  console.error('  해결 방법 (둘 중 하나)');
+  console.error('');
+  console.error('  1) 이 앱이 이미 떠 있는 검은 창이 있는지 확인하고 닫은 뒤 다시 실행');
+  console.error('');
+  if (process.platform === 'win32') {
+    console.error('  2) 그래도 안 되면 아래를 PowerShell 에 붙여넣어 정리');
+    console.error(`     Get-NetTCPConnection -LocalPort ${PORT} -State Listen |`);
+    console.error('       Select-Object -ExpandProperty OwningProcess | ForEach-Object { Stop-Process -Id $_ -Force }');
+  } else {
+    console.error('  2) 그래도 안 되면 아래를 터미널에 붙여넣어 정리');
+    console.error(`     lsof -ti tcp:${PORT} | xargs kill -9`);
+  }
+  console.error('');
+  console.error(`  3) 다른 포트를 쓰려면 .env 파일에  PORT=${PORT + 1}  을 적어주세요.`);
+  console.error('');
+  process.exit(1);
+});
