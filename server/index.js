@@ -44,11 +44,26 @@ app.use('/api/uploads', uploadRoutes);
 app.use('/api', galleryRoutes);
 app.use('/api/admin', adminRoutes);
 
-app.use(express.static(PUBLIC_DIR, { maxAge: '1h', index: 'index.html' }));
+/**
+ * 정적 파일 캐시 정책
+ *  - 사진(/img)  : 파일이 바뀌지 않으므로 길게 캐시 (현지 느린 회선에서 재다운로드 방지)
+ *  - 그 외(HTML·CSS·JS) : no-cache — 매번 서버에 확인하고 안 바뀌었으면 304.
+ *    앱을 고쳤을 때 참가자 휴대폰에 바로 반영되도록 하기 위함.
+ */
+app.use(express.static(PUBLIC_DIR, {
+  index: 'index.html',
+  etag: true,
+  lastModified: true,
+  setHeaders(res, filePath) {
+    const isImage = /[\\/]img[\\/]/.test(filePath);
+    res.setHeader('Cache-Control', isImage ? 'public, max-age=604800' : 'no-cache');
+  },
+}));
 
 // SPA fallback
 app.get('*', (req, res, next) => {
   if (req.path.startsWith('/api/')) return next();
+  res.setHeader('Cache-Control', 'no-cache');
   res.sendFile('index.html', { root: PUBLIC_DIR });
 });
 
