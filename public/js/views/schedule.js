@@ -93,6 +93,27 @@ function busCard() {
     </div>`;
 }
 
+/**
+ * 방문지 사진은 가로세로 비율이 제각각이라 높이를 고정하면 잘리거나 여백이 남는다.
+ * 실제 비율대로 높이를 맞추되, 세로로 긴 사진이 화면을 다 잡아먹지 않게 상한을 둔다.
+ * (CSS 만으로는 시트 본문이 grid 라 높이가 눌려서 다시 잘린다.)
+ */
+function fitBanner(box) {
+  if (!box) return;
+  const img = box.querySelector('img');
+  if (!img) return;
+  const fit = () => {
+    const w = img.naturalWidth;
+    const h = img.naturalHeight;
+    const cw = box.clientWidth;
+    if (!w || !cw) return;
+    const cap = Math.min(Math.round(window.innerHeight * 0.34), 260);
+    box.style.height = `${Math.min(Math.round((cw * h) / w), cap)}px`;
+  };
+  if (img.complete && img.naturalWidth) fit();
+  else img.addEventListener('load', fit, { once: true });
+}
+
 export function showPlace(slug) {
   const p = S.placeBySlug.get(slug);
   if (!p) return;
@@ -102,7 +123,7 @@ export function showPlace(slug) {
   const s = sheet({
     title: `${p.emoji} ${p.title}`,
     body: `
-      ${p.img ? `<figure class="pbanner">
+      ${p.img ? `<figure class="pbanner" style="--shot:url('/img/${p.img}')">
         <img src="/img/${p.img}" alt="${esc(p.title)}">
       </figure>` : ''}
       <div class="chips">
@@ -130,6 +151,7 @@ export function showPlace(slug) {
     foot: `<button class="btn primary block" id="pl-up">📸 여기 사진 올리기</button>`,
   });
 
+  fitBanner(s.root.querySelector('.pbanner'));
   s.root.querySelector('#pl-up').onclick = () => { s.close(); openUploader({ placeSlug: slug }); };
   s.root.querySelectorAll('[data-m]').forEach((t) => {
     t.onclick = () => { s.close(); openUploader({ placeSlug: slug, mission: t.dataset.m }); };
