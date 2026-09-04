@@ -1,0 +1,30 @@
+{
+  "name": "baekdu",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "ICCA 산악회 백두산 3박4일 여행 안내 및 사진/영상 미션 수집 웹앱",
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "node --watch server/index.js",
+    "seed": "node server/seed.js",
+    "reset-db": "node server/seed.js --reset",
+    "smoke": "node server/tools/smoke.js"
+  },
+  "dependencies": {
+    "archiver": "^7.0.1",
+    "bcryptjs": "^3.0.2",
+    "better-sqlite3": "^12.4.1",
+    "connect-sqlite3": "^0.9.15",
+    "dotenv": "^17.2.3",
+    "express": "^4.21.2",
+    "express-session": "^1.18.1",
+    "multer": "^2.0.2"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "playwright-core": "^1.62.1"
+  }
+}

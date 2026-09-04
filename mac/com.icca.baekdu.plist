@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  맥 미니를 켜두고 상시 서버로 쓸 때만 사용하세요. (선택 사항)
+
+  1) 아래 __경로__ 두 곳을 실제 폴더 경로로 바꾸세요.
+     예) /Users/gildong/BaekDu
+  2) 설치:
+       cp mac/com.icca.baekdu.plist ~/Library/LaunchAgents/
+       launchctl load ~/Library/LaunchAgents/com.icca.baekdu.plist
+  3) 중지:
+       launchctl unload ~/Library/LaunchAgents/com.icca.baekdu.plist
+  4) 로그 확인:
+       tail -f __경로__/data/server.log
+-->
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.icca.baekdu</string>
+
+  <key>ProgramArguments</key>
+  <array>
+    <string>/usr/bin/caffeinate</string>
+    <string>-is</string>
+    <string>/usr/local/bin/node</string>
+    <string>__경로__/server/index.js</string>
+  </array>
+
+  <key>WorkingDirectory</key>
+  <string>__경로__</string>
+
+  <key>RunAtLoad</key>
+  <true/>
+
+  <key>KeepAlive</key>
+  <true/>
+
+  <key>StandardOutPath</key>
+  <string>__경로__/data/server.log</string>
+
+  <key>StandardErrorPath</key>
+  <string>__경로__/data/server.log</string>
+</dict>
+</plist>

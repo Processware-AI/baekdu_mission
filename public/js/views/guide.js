@@ -1,0 +1,100 @@
+import { S } from '../state.js';
+import { esc } from '../util.js';
+
+export default async function renderGuide(host) {
+  const b = S.bundle;
+
+  host.innerHTML = `
+    <section class="card">
+      <h2>⚠️ 주의사항</h2>
+      <div style="display:grid;gap:9px">
+        ${b.alerts.map((a) => `
+          <div class="alert ${a.level}"><div class="ic">${a.icon}</div>
+            <div><b>${esc(a.title)}</b><p>${esc(a.body)}</p></div></div>`).join('')}
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>🎒 준비물 · 안내</h2>
+      <div style="display:grid;gap:14px">
+        ${b.prep.map((p) => `
+          <div>
+            <div style="font-weight:700;font-size:13.5px;margin-bottom:5px">${p.icon} ${esc(p.title)}</div>
+            <ul class="list-plain">${p.items.map((i) => `<li>${esc(i)}</li>`).join('')}</ul>
+          </div>`).join('')}
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>🚍 셔틀버스</h2>
+      <div class="row"><div class="em">🛫</div><div class="t">
+        <b>가는 날 · ${esc(b.shuttle.out.when)}</b>
+        <small>${esc(b.shuttle.out.where)}<br>${esc(b.shuttle.out.detail)}<br>${esc(b.shuttle.out.car)}</small>
+      </div></div>
+      <div class="row"><div class="em">🛬</div><div class="t">
+        <b>오는 날 · ${esc(b.shuttle.back.when)}</b>
+        <small>${esc(b.shuttle.back.detail)}</small>
+      </div></div>
+      <div class="alert info" style="margin-top:10px"><div class="ic">🚶</div>
+        <div><b>개별이동자</b><p>${esc(b.shuttle.individual)}</p></div></div>
+    </section>
+
+    <section class="card">
+      <h2>💰 여행경비 · 공동경비</h2>
+      <div class="kv">
+        <dt>1인 여행경비</dt><dd>${esc(b.fees.perPerson)}</dd>
+        ${b.fees.common.map((c) => `<dt>${esc(c.label)}</dt><dd>${esc(c.amount)}</dd>`).join('')}
+        <dt>입금계좌</dt><dd>${esc(b.fees.account.bank)}<br>${esc(b.fees.account.number)}</dd>
+        <dt>예금주</dt><dd>${esc(b.fees.account.holder)}</dd>
+      </div>
+      <div class="hint" style="margin-top:8px">${esc(b.fees.note)}</div>
+      <div class="section-title" style="margin-top:14px">공동경비 사용 예정</div>
+      <ul class="list-plain" style="margin-top:8px">${b.fees.usage.map((u) => `<li>${esc(u)}</li>`).join('')}</ul>
+      <div class="section-title" style="margin-top:14px">여행경비 포함</div>
+      <ul class="list-plain" style="margin-top:8px">${b.fees.included.map((u) => `<li>${esc(u)}</li>`).join('')}</ul>
+      <div class="section-title" style="margin-top:14px">불포함</div>
+      <ul class="list-plain" style="margin-top:8px">${b.fees.excluded.map((u) => `<li>${esc(u)}</li>`).join('')}</ul>
+    </section>
+
+    <section class="card">
+      <h2>📞 연락처</h2>
+      ${b.contacts.map((c) => `
+        <div class="row">
+          <div class="em">${c.local ? '🇨🇳' : '📱'}</div>
+          <div class="t"><b>${esc(c.name)}</b>
+            <small>${esc(c.role)}${c.note ? ` · ${esc(c.note)}` : ''}</small></div>
+          <a class="btn sm ghost" href="tel:${esc(c.phone.replace(/[^0-9+]/g, ''))}">${esc(c.phone)}</a>
+        </div>`).join('')}
+      <div class="hint" style="margin-top:8px">현지 가이드 번호는 중국 번호입니다. 국내에서 걸 때는 +86을 앞에 붙이세요.</div>
+    </section>
+
+    <section class="card">
+      <h2>🎁 기념품</h2>
+      <p class="small" style="margin:0 0 8px">
+        최종식 산악회장님께서 준비하신 <b>단체모자</b>와 <b>타올</b>을 참석자 전원에게 드립니다.
+        인천공항 제주항공 카운터 앞에서 수령하세요.
+      </p>
+      <div class="alert info"><div class="ic">🧢</div><div>
+        <b>여행 기간 동안 단체모자를 함께 착용해 주세요</b>
+        <p>많은 인원 속에서 일행 확인이 쉽고, 백두산 단체사진도 훨씬 멋지게 남습니다.</p></div></div>
+    </section>
+
+    <section class="card">
+      <h2>🙏 찬조해 주신 분들</h2>
+      ${b.sponsors.map((s) => `
+        <div class="row"><div class="t"><b>${esc(s.name)}</b><small>${esc(s.item)}</small></div></div>`).join('')}
+      <p class="hint center" style="margin-top:10px">
+        따뜻한 마음으로 찬조해 주신 분들께 진심으로 감사드립니다.<br>
+        — 인천상공회의소 CEO아카데미 운영진 일동</p>
+    </section>
+
+    <section class="card">
+      <h2>🏢 여행사</h2>
+      <div class="kv">
+        <dt>여행사</dt><dd>${esc(b.trip.agency)}</dd>
+        <dt>주소</dt><dd style="text-align:right">${esc(b.trip.agencyAddr)}</dd>
+        <dt>전화</dt><dd><a href="tel:${esc(b.trip.agencyTel.replace(/-/g, ''))}">${esc(b.trip.agencyTel)}</a></dd>
+        <dt>피켓명</dt><dd>${esc(b.trip.picket)}</dd>
+      </div>
+    </section>`;
+}

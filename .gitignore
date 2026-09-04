@@ -1,0 +1,22 @@
+# 의존성
+node_modules/
+
+# 실제 데이터 (DB, 업로드된 사진·영상) — 루트의 data 폴더만 제외
+#  ※ 앞의 / 가 없으면 server/data/ 까지 함께 제외되므로 반드시 붙일 것
+/data/
+/data-test/
+/data-uitest/
+
+# 개인정보가 담긴 원본 자료
+#  - 룸메이트 배정표.png : 여권번호 · 여권만료일 · 연락처
+#  - 버스배정표.png      : 연락처
+#  - 찬조내역.txt        : 개인별 찬조 금액
+/참고자료/
+
+# 설정 / 로그 / 임시
+.env
+*.log
+/.shots/
+/.tmp_crop/
+.DS_Store
+Thumbs.db
