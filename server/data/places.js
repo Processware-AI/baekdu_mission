@@ -4,6 +4,7 @@
  * slug   : 파일 폴더명 및 URL에 쓰이는 식별자
  * folder : 실제 저장 폴더명 (한글 — 나중에 탐색기에서 바로 분류된 상태로 보임)
  * boost  : 점수 배율 (핵심 스팟은 2배)
+ * img    : 대표 사진 (public/img/) — 여행사 일정표의 실사진에서 추출
  */
 
 export const MISSIONS = [
@@ -59,15 +60,15 @@ export const PLACES = [
 
   // ── 2일차 (9/11 금) ──────────────────────────────────────────────
   { slug: 'seopa-stairs', day: 2, seq: 1, time: '10:00', title: '백두산 서파 1,442 계단',
-    area: '백두산 서파', emoji: '🪜', boost: 2,
+    area: '백두산 서파', emoji: '🪜', img: 'seopa-stairs.jpg', boost: 2,
     desc: '송강하 이동(약 1시간 30분) 후 서파 입산. 계단 약 40분.',
     tip: '⭐ 핵심 스팟(2배). 계단 중간에서 아래를 내려다보는 앵글이 압권입니다.' },
   { slug: 'seopa-cheonji', day: 2, seq: 2, time: '11:00', title: '백두산 천지 (서파) · 경계비',
-    area: '백두산 서파', emoji: '🏔️', boost: 2,
+    area: '백두산 서파', emoji: '🏔️', img: 'seopa-cheonji.jpg', boost: 2,
     desc: '영산 백두산 천지 관광 / 5호·37호 경계비.',
     tip: '⭐ 핵심 스팟(2배). 이번 여행의 메인 컷. 4인 이상 미션까지 꼭 채우세요!' },
   { slug: 'geumgang-canyon', day: 2, seq: 3, time: '11:40', title: '금강대협곡',
-    area: '백두산 서파', emoji: '🌲', boost: 2,
+    area: '백두산 서파', emoji: '🌲', img: 'geumgang-canyon.jpg', boost: 2,
     desc: '동양의 그랜드캐년이라 불리는 협곡 데크길.',
     tip: '⭐ 핵심 스팟(2배). 데크길 세로 영상이 쇼츠에 잘 맞습니다.' },
   { slug: 'lunch-sanchae', day: 2, seq: 4, time: '12:00', title: '중식 · 산채비빔밥',
@@ -83,18 +84,18 @@ export const PLACES = [
 
   // ── 3일차 (9/12 토) ──────────────────────────────────────────────
   { slug: 'bukpa-cheonji', day: 3, seq: 1, time: '09:00', title: '백두산 북파 천지 (천문봉)',
-    area: '백두산 북파', emoji: '⛰️', boost: 2,
+    area: '백두산 북파', emoji: '⛰️', img: 'bukpa-cheonji.jpg', boost: 2,
     desc: 'VIP 코스. 10인승 차량으로 천문봉까지 이동.',
     tip: '⭐ 핵심 스팟(2배). 서파와 다른 각도의 천지! 바람이 강하니 모자 주의.' },
   { slug: 'jangbaek-falls', day: 3, seq: 2, time: '10:30', title: '장백폭포',
-    area: '백두산 북파', emoji: '💦', boost: 2,
+    area: '백두산 북파', emoji: '💦', img: 'jangbaek-falls.jpg', boost: 2,
     desc: '1년 내내 얼지 않는 장백폭포.',
     tip: '⭐ 핵심 스팟(2배). 폭포 소리를 담은 세로 영상 추천!' },
   { slug: 'hot-spring', day: 3, seq: 3, time: '11:30', title: '온천지대',
-    area: '백두산 북파', emoji: '♨️', boost: 1,
+    area: '백두산 북파', emoji: '♨️', img: 'hot-spring.jpg', boost: 1,
     desc: '백두산 온천지대 관광 (온천 계란).', tip: '김이 피어오르는 장면은 영상이 예쁩니다.' },
   { slug: 'haeranggang', day: 3, seq: 4, time: '15:00', title: '해란강 · 일송정',
-    area: '용정', emoji: '🌊', boost: 1,
+    area: '용정', emoji: '🌊', img: 'haeranggang.jpg', boost: 1,
     desc: '용정 이동(약 1시간 30분) 후 해란강·일송정 차창 관광.',
     tip: '차창 밖 풍경도 좋은 소스입니다. 흔들림만 조심!' },
   { slug: 'yongdure-well', day: 3, seq: 5, time: '16:30', title: '용두레 우물',
@@ -107,7 +108,7 @@ export const PLACES = [
 
   // ── 4일차 (9/13 일) ──────────────────────────────────────────────
   { slug: 'yun-dongju', day: 4, seq: 1, time: '09:00', title: '윤동주 생가',
-    area: '용정', emoji: '📖', boost: 2,
+    area: '용정', emoji: '📖', img: 'yun-dongju.jpg', boost: 2,
     desc: '시인 윤동주 생가 관광.',
     tip: '⭐ 핵심 스팟(2배). 생가 대문·시비 앞 컷이 좋습니다.' },
   { slug: 'tumen', day: 4, seq: 2, time: '14:00', title: '두만강 공원 · 조중 접경지대',

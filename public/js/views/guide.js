@@ -12,6 +12,16 @@ export default async function renderGuide(host) {
           <div class="alert ${a.level}"><div class="ic">${a.icon}</div>
             <div><b>${esc(a.title)}</b><p>${esc(a.body)}</p></div></div>`).join('')}
       </div>
+      <div class="figrow" style="margin-top:12px">
+        <figure class="figure warn">
+          <img loading="lazy" src="/img/no-flag.jpg" alt="태극기 반입 금지 안내">
+          <figcaption>🚫 태극기 깃발·액세서리 모두 단속 대상</figcaption>
+        </figure>
+        <figure class="figure warn">
+          <img loading="lazy" src="/img/battery.jpg" alt="보조배터리 기내 반입 규정">
+          <figcaption>🔋 보조배터리는 반드시 몸에 소지</figcaption>
+        </figure>
+      </div>
     </section>
 
     <section class="card">
@@ -74,9 +84,23 @@ export default async function renderGuide(host) {
         최종식 산악회장님께서 준비하신 <b>단체모자</b>와 <b>타올</b>을 참석자 전원에게 드립니다.
         인천공항 제주항공 카운터 앞에서 수령하세요.
       </p>
+      <div class="figrow" style="margin-bottom:10px">
+        <figure class="figure">
+          <img loading="lazy" src="/img/gift-hat.jpg" alt="단체모자">
+          <figcaption>🧢 단체모자</figcaption>
+        </figure>
+        <figure class="figure">
+          <img loading="lazy" src="/img/gift-hat-worn.jpg" alt="단체모자 착용 사례">
+          <figcaption>👥 착용 사례</figcaption>
+        </figure>
+      </div>
       <div class="alert info"><div class="ic">🧢</div><div>
         <b>여행 기간 동안 단체모자를 함께 착용해 주세요</b>
         <p>많은 인원 속에서 일행 확인이 쉽고, 백두산 단체사진도 훨씬 멋지게 남습니다.</p></div></div>
+      <figure class="figure" style="margin-top:12px">
+        <img loading="lazy" src="/img/banner.jpg" alt="백두산 여행 플랭카드">
+        <figcaption>🎌 단체사진용 플랭카드 — 이 앞에서 찍은 컷이 쇼츠 오프닝이 됩니다</figcaption>
+      </figure>
     </section>
 
     <section class="card">

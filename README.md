@@ -289,7 +289,28 @@ mac/com.icca.baekdu.plist       macOS 자동 실행 설정 (선택)
 
 ---
 
-## 10. 보안 · 개인정보
+## 10. 화면 사진
+
+`public/img/` 의 사진은 모두 **참고자료 폴더의 자료에서 추출**한 것입니다.
+힌링투어 일정표(`여행 정보1~3.jpg`)의 실사진과 기념품·안내 이미지를
+잘라내고 압축했으며, 전체 용량은 약 680KB 입니다.
+
+| 파일 | 쓰이는 곳 |
+|---|---|
+| `hero-cheonji.jpg` | 홈 화면 상단 배경 (천지 파노라마) |
+| `seopa-cheonji` `seopa-stairs` `geumgang-canyon` | 2일차 방문지 |
+| `bukpa-cheonji` `jangbaek-falls` `hot-spring` `haeranggang` | 3일차 방문지 |
+| `yun-dongju` | 4일차 방문지 |
+| `no-flag` `battery` | 안내 화면 주의사항 |
+| `gift-hat` `gift-hat-worn` `banner` | 안내 화면 기념품·플랭카드 |
+
+사진이 없는 방문지(집결·공항·식사·호텔 등)는 이모지로 표시됩니다.
+나중에 실제 여행 사진으로 바꾸려면 `public/img/` 에 파일을 넣고
+`server/data/places.js` 의 `img:` 항목만 수정하면 됩니다.
+
+---
+
+## 11. 보안 · 개인정보
 
 이 저장소는 **비공개(private)** 입니다. 참가자 75명의 이름과 휴대폰 번호가
 `server/data/participants.js` 에 들어 있고, **그 번호가 곧 초기 비밀번호**이기 때문입니다.

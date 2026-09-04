@@ -222,6 +222,38 @@ async function main() {
     await dp.screenshot({ path: path.join(SHOTS, '16-dark.png'), fullPage: true });
     await dark.close();
 
+    console.log('\n▶ 사진');
+    await page.goto(`${BASE}/#/home`);
+    await page.waitForSelector('.hero', { timeout: 10000 });
+    const heroBg = await page.evaluate(() => {
+      const h = document.querySelector('.hero.photo');
+      return h ? getComputedStyle(h).backgroundImage : '';
+    });
+    ok(heroBg.includes('hero-cheonji'), '홈 히어로에 천지 사진 적용', heroBg.slice(0, 60));
+
+    for (const [label, hash, min] of [['일정', '#/schedule', 8], ['미션', '#/mission', 8], ['안내', '#/guide', 5]]) {
+      await page.goto(`${BASE}/${hash}`);
+      await page.waitForTimeout(600);
+      // 화면 밖 lazy 이미지까지 모두 불러오도록 끝까지 스크롤
+      await page.evaluate(async () => {
+        for (let y = 0; y < document.body.scrollHeight; y += 400) {
+          window.scrollTo(0, y);
+          await new Promise((r) => setTimeout(r, 40));
+        }
+        window.scrollTo(0, 0);
+      });
+      await page.waitForTimeout(1000);
+      const r = await page.evaluate(() => {
+        const imgs = [...document.querySelectorAll('img')].filter((i) => i.src.includes('/img/'));
+        return {
+          total: imgs.length,
+          broken: imgs.filter((i) => !i.complete || i.naturalWidth === 0).map((i) => i.getAttribute('src')),
+        };
+      });
+      ok(r.total >= min && r.broken.length === 0,
+        `${label} 화면 사진 ${r.total}장 모두 로드`, r.broken.join(', '));
+    }
+
     console.log('\n▶ 콘솔 오류');
     const jsErrors = errors.filter((e) => !/Failed to load resource/.test(e));
     ok(jsErrors.length === 0, '자바스크립트 오류 없음', jsErrors.slice(0, 4).join(' | '));

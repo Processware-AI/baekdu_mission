@@ -63,7 +63,9 @@ export default async function renderMission(host, args) {
           const pr = progressOf(p.slug);
           return `
           <div class="pcard" data-p="${p.slug}">
-            <div class="e">${p.emoji}</div>
+            ${p.img
+              ? `<img class="thumb" loading="lazy" src="/img/${p.img}" alt="">`
+              : `<div class="e">${p.emoji}</div>`}
             <div class="t">
               <b>${esc(p.title)}${p.boost > 1 ? ' ⭐' : ''}</b>
               <small>${esc(p.time)} · ${esc(p.area)} · 전체 ${pr.all.count}장</small>

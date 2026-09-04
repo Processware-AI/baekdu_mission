@@ -36,9 +36,12 @@ export default async function renderSchedule(host) {
             return `<div class="stop ${pr.myCount ? 'done' : ''} ${p.boost > 1 ? 'boost' : ''}" data-p="${p.slug}">
               <div class="time">${esc(p.time)}</div>
               <div class="body">
-                <b>${p.emoji} ${esc(p.title)}${p.boost > 1 ? ' <span class="chip gold">×2</span>' : ''}</b>
-                <small>${esc(p.desc)}</small>
-                ${pr.myCount ? `<small class="chip ok" style="margin-top:4px">내 사진 ${pr.myCount}장${pr.conquered ? ' · 정복!' : ''}</small>` : ''}
+                ${p.img ? `<img class="thumb" loading="lazy" src="/img/${p.img}" alt="">` : ''}
+                <div class="txt">
+                  <b>${p.emoji} ${esc(p.title)}${p.boost > 1 ? ' <span class="chip gold">×2</span>' : ''}</b>
+                  <small>${esc(p.desc)}</small>
+                  ${pr.myCount ? `<small class="chip ok" style="margin-top:4px">내 사진 ${pr.myCount}장${pr.conquered ? ' · 정복!' : ''}</small>` : ''}
+                </div>
               </div>
               <div class="chev">›</div>
             </div>`;
@@ -99,6 +102,9 @@ export function showPlace(slug) {
   const s = sheet({
     title: `${p.emoji} ${p.title}`,
     body: `
+      ${p.img ? `<figure class="pbanner">
+        <img src="/img/${p.img}" alt="${esc(p.title)}">
+      </figure>` : ''}
       <div class="chips">
         <span class="chip accent">${p.day ? `${p.day}일차` : '상시'} ${esc(p.time)}</span>
         <span class="chip">${esc(p.area)}</span>

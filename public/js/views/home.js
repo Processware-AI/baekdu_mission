@@ -18,9 +18,9 @@ export default async function renderHome(host) {
   const feed = await api.get('/api/feed').catch(() => ({ items: [] }));
 
   host.innerHTML = `
-    <section class="hero">
+    <section class="hero photo">
       <div class="eyebrow">${esc(b.trip.org)}</div>
-      <h2>${esc(b.trip.title)}</h2>
+      <h2>${esc(b.trip.title.replace(/^ICCA 산악회\s*/, ''))}</h2>
       <div class="dates">2026. 9. 10(목) ~ 9. 13(일) · ${b.trip.headcount}명</div>
       <div class="dday">
         ${dleft > 0
@@ -71,8 +71,11 @@ export default async function renderHome(host) {
           return `<div class="stop ${pr.myCount ? 'done' : ''} ${p.boost > 1 ? 'boost' : ''}" data-place="${p.slug}">
             <div class="time">${esc(p.time)}</div>
             <div class="body">
-              <b>${p.emoji} ${esc(p.title)}</b>
-              <small>${esc(p.area)}${pr.myCount ? ` · 내 사진 ${pr.myCount}장` : ''}</small>
+              ${p.img ? `<img class="thumb" loading="lazy" src="/img/${p.img}" alt="">` : ''}
+              <div class="txt">
+                <b>${p.emoji} ${esc(p.title)}</b>
+                <small>${esc(p.area)}${pr.myCount ? ` · 내 사진 ${pr.myCount}장` : ''}</small>
+              </div>
             </div>
             <div class="chev">›</div>
           </div>`;
@@ -82,12 +85,12 @@ export default async function renderHome(host) {
     <section class="card">
       <h2>🗓️ 출발 전 확인</h2>
       <div class="tl">
-        <div class="stop"><div class="time">12:00</div><div class="body">
-          <b>🚍 문학경기장 집결</b><small>암벽등반장 뒤 대형주차장 · 셔틀버스 탑승</small></div></div>
-        <div class="stop"><div class="time">13:00</div><div class="body">
-          <b>✈️ 인천공항 1터미널</b><small>3층 제주항공 카운터 앞 · 기념품 수령</small></div></div>
-        <div class="stop"><div class="time">15:00</div><div class="body">
-          <b>🛂 게이트 집결</b><small>탑승권에 표시된 게이트 앞</small></div></div>
+        <div class="stop"><div class="time">12:00</div><div class="body"><div class="txt">
+          <b>🚍 문학경기장 집결</b><small>암벽등반장 뒤 대형주차장 · 셔틀버스 탑승</small></div></div></div>
+        <div class="stop"><div class="time">13:00</div><div class="body"><div class="txt">
+          <b>✈️ 인천공항 1터미널</b><small>3층 제주항공 카운터 앞 · 기념품 수령</small></div></div></div>
+        <div class="stop"><div class="time">15:00</div><div class="body"><div class="txt">
+          <b>🛂 게이트 집결</b><small>탑승권에 표시된 게이트 앞</small></div></div></div>
       </div>
     </section>`}
 
@@ -115,7 +118,7 @@ export default async function renderHome(host) {
     </section>` : `
     <section class="card"><div class="empty">
       <div class="e">📷</div><b>아직 올라온 사진이 없어요</b>
-      <p>첫 번째로 올리면 <b>선착순 보너스 +30점</b>!</p>
+      <p>첫 번째로 올리면 <b>선착순 보너스 +30점!</b></p>
     </div></section>`}
 
     <section class="card">

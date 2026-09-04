@@ -329,3 +329,48 @@ textarea{resize:vertical; min-height:70px; line-height:1.5}
 .muted{color:var(--muted)}
 .small{font-size:12px}
 .mono{font-variant-numeric:tabular-nums}
+
+/* ── 사진 ─────────────────────────────────────────────────────── */
+/* 히어로: 천지 사진 위에 그라데이션을 덮어 글자 가독성 확보 */
+.hero.photo{
+  background:
+    linear-gradient(to top, rgba(4,20,36,.88) 0%, rgba(6,32,56,.52) 38%, rgba(8,50,84,.14) 72%, rgba(8,50,84,.06) 100%),
+    url("/img/hero-cheonji.jpg") center 42%/cover no-repeat, #0d3b66;
+  min-height:206px; display:flex; flex-direction:column; justify-content:flex-end;
+}
+.hero.photo::after{content:none}
+.hero.photo .eyebrow,.hero.photo .dates{text-shadow:0 1px 6px rgba(0,0,0,.55)}
+.hero.photo h2{text-shadow:0 2px 10px rgba(0,0,0,.6)}
+
+/* 목록의 원형 썸네일 (사진이 없으면 이모지 그대로) */
+.thumb{
+  width:46px; height:46px; border-radius:13px; flex:none; object-fit:cover;
+  background:var(--raise); border:1px solid var(--line);
+}
+.pcard .thumb{width:50px; height:50px}
+.tl .thumb{width:40px; height:40px; border-radius:11px}
+
+/* 방문지 상세 시트 상단 배너 */
+.pbanner{
+  position:relative; margin:-16px -18px 2px; height:150px; overflow:hidden;
+  background:var(--raise);
+}
+.pbanner img{width:100%; height:100%; object-fit:cover; display:block}
+.pbanner .cap{
+  position:absolute; left:0; right:0; bottom:0; padding:26px 18px 12px; color:#fff;
+  background:linear-gradient(to top, rgba(0,0,0,.78), rgba(0,0,0,0));
+}
+.pbanner .cap b{display:block; font-size:17px; font-weight:750; letter-spacing:-.3px;
+  text-shadow:0 1px 6px rgba(0,0,0,.6)}
+.pbanner .cap small{font-size:12px; opacity:.9}
+
+/* 안내 화면의 설명용 사진 */
+.figure{margin:0; border-radius:12px; overflow:hidden; border:1px solid var(--line); background:var(--raise)}
+.figure img{width:100%; display:block}
+.figure figcaption{padding:8px 11px; font-size:11.5px; color:var(--muted); font-weight:600}
+.figure.warn{border-color:color-mix(in srgb,var(--danger) 30%,transparent)}
+.figrow{display:grid; grid-template-columns:1fr 1fr; gap:9px}
+
+/* 일정 타임라인에서 사진이 있는 구간 */
+.tl .stop .body{display:flex; gap:10px; align-items:flex-start}
+.tl .stop .body .txt{flex:1; min-width:0}
