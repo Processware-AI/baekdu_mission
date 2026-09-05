@@ -62,22 +62,73 @@ async function preparePhoto(file) {
   return { body, thumb, width, height };
 }
 
-/** 영상: 첫 프레임을 썸네일로 (본문은 그대로) */
+const once = (el, ev, ms) => new Promise((res, rej) => {
+  const done = () => { el.removeEventListener(ev, done); res(); };
+  el.addEventListener(ev, done, { once: true });
+  setTimeout(() => rej(new Error(`${ev} timeout`)), ms);
+});
+
+/** 그려진 그림이 전부 같은 색(=빈 프레임)인지 */
+async function looksBlank(blob) {
+  try {
+    const bmp = await createImageBitmap(blob);
+    const c = document.createElement('canvas');
+    c.width = 8; c.height = 8;
+    const ctx = c.getContext('2d');
+    ctx.drawImage(bmp, 0, 0, 8, 8);
+    bmp.close?.();
+    const d = ctx.getImageData(0, 0, 8, 8).data;
+    for (let i = 4; i < d.length; i += 4) {
+      if (Math.abs(d[i] - d[0]) > 6 || Math.abs(d[i + 1] - d[1]) > 6 || Math.abs(d[i + 2] - d[2]) > 6) return false;
+    }
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * 영상: 한 프레임을 썸네일로 (본문은 그대로).
+ *
+ * 아이폰(사파리)은 영상이 한 번이라도 재생돼야 캔버스에 프레임이 그려진다.
+ * preload='metadata' 로 두고 곧바로 그리면 빈 그림이 나오거나 아예 실패해서,
+ * 갤러리에 영상만 썸네일 없이 남는다. 그래서 preload 를 auto 로 올리고
+ * 음소거 상태로 잠깐 재생한 뒤 그린다. 그래도 빈 그림이면 한 번 더 시도한다.
+ */
 async function prepareVideo(file) {
   const url = URL.createObjectURL(file);
   try {
     const v = document.createElement('video');
-    v.preload = 'metadata';
-    v.muted = true; v.playsInline = true; v.src = url;
-    await new Promise((res, rej) => {
-      v.onloadeddata = res;
-      v.onerror = () => rej(new Error('video decode'));
-      setTimeout(rej, 8000, new Error('video timeout'));
-    });
-    v.currentTime = Math.min(0.6, (v.duration || 1) / 3);
-    await new Promise((res) => { v.onseeked = res; setTimeout(res, 3000); });
+    v.preload = 'auto';
+    v.muted = true;
+    v.defaultMuted = true;
+    v.playsInline = true;
+    v.setAttribute('playsinline', '');
+    v.setAttribute('webkit-playsinline', '');
+    v.src = url;
+
+    await once(v, 'loadeddata', 12000);
+
+    // 아이폰에서 프레임이 디코드되게 하는 핵심. 자동재생이 막히면 그냥 넘어간다.
+    try { await v.play(); } catch { /* 재생 못 해도 아래에서 그려본다 */ }
+
+    const at = Math.min(0.6, (v.duration || 1) / 3);
+    if (Math.abs(v.currentTime - at) > 0.05) {
+      v.currentTime = at;
+      await once(v, 'seeked', 4000).catch(() => {});
+    }
+    v.pause();
+
     const [tw, th] = fit(v.videoWidth || 640, v.videoHeight || 480, 480);
-    const thumb = await drawToBlob(v, tw, th, 0.72);
+    let thumb = await drawToBlob(v, tw, th, 0.72);
+    if (!thumb || await looksBlank(thumb)) {
+      // 조금 더 재생시켜 프레임이 올라오길 기다린 뒤 한 번 더
+      try { await v.play(); } catch { /* 무시 */ }
+      await new Promise((r) => setTimeout(r, 400));
+      v.pause();
+      const retry = await drawToBlob(v, tw, th, 0.72);
+      if (retry && !(await looksBlank(retry))) thumb = retry;
+    }
     return { body: file, thumb, width: v.videoWidth, height: v.videoHeight, duration: v.duration };
   } catch {
     return { body: file, thumb: null };

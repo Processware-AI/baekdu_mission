@@ -187,7 +187,17 @@ router.get('/thumb/:id', (req, res) => {
   if (row.media_type === 'photo') {
     return sendFile(req, res, path.join(UPLOAD_DIR, row.file_path), row.mime);
   }
-  res.status(404).end();
+  // 썸네일을 못 만든 영상(아이폰에서 종종 실패한다). 404 를 주면 갤러리에
+  // 깨진 이미지 물음표가 뜨므로, 영상임을 알 수 있는 그림을 대신 보낸다.
+  res.setHeader('Cache-Control', 'public, max-age=3600');
+  res.type('image/svg+xml').send(VIDEO_PLACEHOLDER);
 });
+
+/** 썸네일이 없는 영상 자리에 넣을 그림 (글꼴에 기대지 않도록 도형으로만) */
+const VIDEO_PLACEHOLDER = `<svg xmlns="http://www.w3.org/2000/svg" width="480" height="480" viewBox="0 0 480 480">
+  <rect width="480" height="480" fill="#1d232d"/>
+  <circle cx="240" cy="240" r="86" fill="none" stroke="#6b7686" stroke-width="10"/>
+  <path d="M214 196 L292 240 L214 284 Z" fill="#6b7686"/>
+</svg>`;
 
 export default router;
