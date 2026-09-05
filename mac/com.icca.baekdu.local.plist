@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  맥 미니를 켜두고 상시 서버로 쓸 때만 사용하세요. (선택 사항)
+
+  LaunchDaemon 이므로 아무도 로그인하지 않아도 부팅 직후 뜹니다.
+  (LaunchAgent 로 두면 로그인해야 떠서, 무인 운영하려면 자동 로그인을
+   켜야 합니다. 자동 로그인은 맥에 손대는 사람 누구나 계정에 들어올 수
+   있게 되므로 권하지 않습니다.)
+  root 가 아니라 UserName 계정 권한으로 돌기 때문에 data 폴더의
+  파일 소유권도 평소와 같습니다.
+
+  ※ 이 파일은 이 맥(dongseok)에 맞게 값이 이미 채워진 사본입니다.
+     다른 맥에 설치할 때는 mac/com.icca.baekdu.plist(템플릿)를 쓰세요.
+
+  원본 템플릿에서 바꾼 값:
+       /Users/dongseok/MyProjects/baekdu_mission   : 이 폴더의 전체 경로   예) /Users/gildong/BaekDu
+       dongseok : 맥 계정 이름          터미널에 whoami
+       /opt/homebrew/bin/node   : node 의 전체 경로     터미널에 which node
+                    애플 실리콘 맥은 보통 /opt/homebrew/bin/node,
+                    인텔 맥은 /usr/local/bin/node 입니다.
+                    launchd 는 PATH 를 물려받지 않으므로 절대경로여야 합니다.
+  2) 설치:
+       sudo cp mac/com.icca.baekdu.plist /Library/LaunchDaemons/
+       sudo launchctl load /Library/LaunchDaemons/com.icca.baekdu.plist
+  3) 중지:
+       sudo launchctl unload /Library/LaunchDaemons/com.icca.baekdu.plist
+  4) 로그 확인:
+       tail -f /Users/dongseok/MyProjects/baekdu_mission/data/server.log
+-->
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.icca.baekdu</string>
+
+  <key>ProgramArguments</key>
+  <array>
+    <string>/usr/bin/caffeinate</string>
+    <string>-is</string>
+    <string>/opt/homebrew/bin/node</string>
+    <string>/Users/dongseok/MyProjects/baekdu_mission/server/index.js</string>
+  </array>
+
+  <!-- root 가 아니라 이 계정 권한으로 실행한다 -->
+  <key>UserName</key>
+  <string>dongseok</string>
+
+  <key>WorkingDirectory</key>
+  <string>/Users/dongseok/MyProjects/baekdu_mission</string>
+
+  <!-- 데몬은 환경변수를 거의 물려받지 않는다 -->
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>HOME</key>
+    <string>/Users/dongseok</string>
+  </dict>
+
+  <key>RunAtLoad</key>
+  <true/>
+
+  <key>KeepAlive</key>
+  <true/>
+
+  <key>ThrottleInterval</key>
+  <integer>5</integer>
+
+  <key>StandardOutPath</key>
+  <string>/Users/dongseok/MyProjects/baekdu_mission/data/server.log</string>
+
+  <key>StandardErrorPath</key>
+  <string>/Users/dongseok/MyProjects/baekdu_mission/data/server.log</string>
+</dict>
+</plist>
