@@ -113,7 +113,8 @@ async function main() {
     console.log('\n▶ 기본 데이터');
     const bundle = await req('GET', '/api/bundle');
     ok(bundle.data.places.length === 21, `방문지 21곳 (${bundle.data.places.length})`);
-    ok(bundle.data.missions.length === 5, '참가자 미션 5종');
+    ok(bundle.data.missions.length === 6, '참가자 미션 6종');
+    ok(bundle.data.freeMissions.length === 10, '자유/기타 주제 10종');
     const people = await req('GET', '/api/participants');
     ok(people.data.length === 75, `참가자 75명 (${people.data.length})`);
     ok(!('phone' in (people.data[0] || {})), '일반 참가자에게 연락처 비공개');
@@ -159,8 +160,8 @@ async function main() {
       form: fd({ file: JPEG, name: 'e.jpg', type: 'image/jpeg',
         fields: { placeSlug: 'seopa-cheonji', mission: 'quad', tags: [손신기.id, 김진영.id, 김봉실.id], clientUid: 'u4' } }),
     });
-    ok(u4.data.events.some((e) => e.kind === 'conquer' && e.points === 200),
-      '4미션 완료 시 방문지 정복 +200 (핵심 스팟 ×2)');
+    ok(!u4.data.events.some((e) => e.kind === 'conquer'),
+      '인원 미션 4종만으로는 아직 정복 아님 (장소/풍경·영상 남음)');
 
     const wrongType = await req('POST', '/api/uploads', {
       form: fd({ file: JPEG, name: 'f.jpg', type: 'image/jpeg',
@@ -173,6 +174,15 @@ async function main() {
         fields: { placeSlug: 'seopa-cheonji', mission: 'video', tags: [], clientUid: 'u6' } }),
     });
     ok(vid.status === 200 && vid.data.points === 80, `영상 40 ×2 = 80점 (실제 ${vid.data.points})`);
+
+    const scen = await req('POST', '/api/uploads', {
+      form: fd({ file: JPEG, name: 'g.jpg', type: 'image/jpeg',
+        fields: { placeSlug: 'seopa-cheonji', mission: 'scenery', tags: [], clientUid: 'u7' } }),
+    });
+    const scenBase = scen.data.events.find((e) => e.kind === 'upload')?.points;
+    ok(scenBase === 30, `장소/풍경 15 ×2 = 30점 (실제 ${scenBase})`);
+    ok(scen.data.events.some((e) => e.kind === 'conquer' && e.points === 200),
+      '6미션 완료 시 방문지 정복 +200 (핵심 스팟 ×2)');
 
     const adminOnly = await req('POST', '/api/uploads', {
       form: fd({ file: JPEG, name: 'g.jpg', type: 'image/jpeg',
@@ -218,8 +228,8 @@ async function main() {
     console.log('\n▶ 집계');
     const sum = await req('GET', '/api/me/summary');
     //  독사진 20 + 선착순 60 | 2인 (25+5)×2=60 | 3인 (45+10)×2=110
-    //  4인+ (70+15)×2=170 + 정복 200 | 영상 40×2=80  →  합계 700
-    const wantScore = 80 + 60 + 110 + 370 + 80;
+    //  4인+ (70+15)×2=170 | 영상 40×2=80 | 장소/풍경 15×2=30 + 정복 200  →  합계 730
+    const wantScore = 80 + 60 + 110 + 170 + 80 + 230;
     ok(sum.data.score === wantScore, `누적 점수 합산 정확 (기대 ${wantScore} / 실제 ${sum.data.score})`);
     ok(sum.data.rank === 1, '내 순위 1위');
     ok(sum.data.badges.find((b) => b.key === 'conqueror')?.earned, '정복자 배지 획득');
@@ -227,7 +237,7 @@ async function main() {
 
     const prog = await req('GET', '/api/progress');
     const sp = prog.data.places.find((p) => p.slug === 'seopa-cheonji');
-    ok(sp.conquered === true && sp.myCount === 5, '방문지 진행률 정확');
+    ok(sp.conquered === true && sp.myCount === 6, '방문지 진행률 정확');
 
     const rank = await req('GET', '/api/rank');
     ok(rank.data.overall[0].name === '박화서', '개인 랭킹 1위 표시');
@@ -235,7 +245,7 @@ async function main() {
     ok(g1 && g1.score > 0, '조별 랭킹 집계');
 
     const gal = await req('GET', '/api/gallery?place=seopa-cheonji');
-    ok(gal.data.total === 5, `갤러리 조회 5건 (${gal.data.total})`);
+    ok(gal.data.total === 6, `갤러리 조회 6건 (${gal.data.total})`);
     ok(gal.data.items[0].tags !== undefined, '갤러리에 태그 정보 포함');
 
     const thumb = await fetch(`${BASE}/api/thumb/${u1.data.id}`, { headers: { cookie } });
@@ -255,8 +265,8 @@ async function main() {
 
     await req('POST', '/api/auth/login', { json: { name: 'admin', password: 'testpw123' } });
     const stats = await req('GET', '/api/admin/stats');
-    // 박화서 5칸(독/2인/3인/4인+/영상) + 운영진 단체사진 2장
-    ok(stats.status === 200 && stats.data.totals.uploads === 7,
+    // 박화서 6칸(독/2인/3인/4인+/풍경/영상) + 운영진 단체사진 2장
+    ok(stats.status === 200 && stats.data.totals.uploads === 8,
       `운영진 현황 조회 (총 ${stats.data.totals?.uploads}건)`);
     ok(stats.data.silent.length === 74, `미참여자 집계 74명 (${stats.data.silent.length})`);
 

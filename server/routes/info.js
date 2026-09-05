@@ -1,7 +1,7 @@
 import express from 'express';
 import db from '../db.js';
 import { requireAuth } from '../middleware/auth.js';
-import { PLACES, DAYS, MISSIONS, ADMIN_MISSIONS } from '../data/places.js';
+import { PLACES, DAYS, MISSIONS, FREE_MISSIONS, ADMIN_MISSIONS } from '../data/places.js';
 import { GROUPS, BUSES, DAY3_BUS_BY_GROUP } from '../data/participants.js';
 import { TRIP, CONTACTS, ALERTS, PREP, FEES, SPONSORS, SHUTTLE } from '../data/guide.js';
 import { RULES } from '../lib/scoring.js';
@@ -30,6 +30,7 @@ router.get('/bundle', (req, res) => {
     days: DAYS,
     places: PLACES,
     missions: MISSIONS,
+    freeMissions: FREE_MISSIONS,
     adminMissions: ADMIN_MISSIONS,
     rules: RULES,
     groups: GROUPS,

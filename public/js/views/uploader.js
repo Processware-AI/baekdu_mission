@@ -1,20 +1,20 @@
-import { S, missionMeta, progressOf } from '../state.js';
+import { S, missionMeta, progressOf, missionsFor, isFreePlace } from '../state.js';
 import { sheet, esc, toast, el } from '../util.js';
 import { prepare, enqueue } from '../upload.js';
 
 /** 업로드 시트 — 방문지 + 미션 + 파일 + 함께 찍은 사람 */
 export function openUploader({ placeSlug = null, mission = null } = {}) {
   const places = S.bundle.places;
-  const missions = [...S.bundle.missions, ...(S.user.isAdmin ? S.bundle.adminMissions : [])];
 
   let sel = {
     place: placeSlug || guessPlace(),
-    mission: mission || 'solo',
+    mission: null,
     file: null,
     prepared: null,
     tags: new Set(),
     caption: '',
   };
+  sel.mission = validMission(mission, sel.place);
 
   const body = el('div', { class: 'uw' });
   const s = sheet({
@@ -34,7 +34,15 @@ export function openUploader({ placeSlug = null, mission = null } = {}) {
     return n === 4 ? total >= 4 : total === n;
   }
 
+  /** 이 방문지에서 고를 수 있는 미션인지 확인하고, 아니면 첫 번째 것으로 되돌린다 */
+  function validMission(key, slug) {
+    const list = missionsFor(slug, { withAdmin: true });
+    return list.some((mm) => mm.key === key) ? key : list[0]?.key;
+  }
+
   function render() {
+    const missions = missionsFor(sel.place, { withAdmin: true });
+    const free = isFreePlace(sel.place);
     const m = missionMeta(sel.mission);
     const p = S.placeBySlug.get(sel.place);
     const n = need();
@@ -56,7 +64,7 @@ export function openUploader({ placeSlug = null, mission = null } = {}) {
       </div>
 
       <div class="field">
-        <label>🎯 어떤 미션인가요?</label>
+        <label>${free ? '✨ 어떤 주제인가요?' : '🎯 어떤 미션인가요?'}</label>
         <div class="mgrid" id="u-missions">
           ${missions.map((mm) => {
             const filled = !!progressOf(sel.place).mine?.[mm.key];
@@ -85,11 +93,11 @@ export function openUploader({ placeSlug = null, mission = null } = {}) {
         <div class="btn-row">
           <label class="btn ghost" style="flex:1">
             📷 촬영
-            <input type="file" id="u-cam" hidden accept="${m.key === 'video' || m.key === 'vlog' ? 'video/*' : 'image/*'}" capture="environment">
+            <input type="file" id="u-cam" hidden accept="${m.video ? 'video/*' : 'image/*'}" capture="environment">
           </label>
           <label class="btn ghost" style="flex:1">
             🖼️ 앨범에서
-            <input type="file" id="u-lib" hidden accept="${m.key === 'video' || m.key === 'vlog' ? 'video/*' : 'image/*'}">
+            <input type="file" id="u-lib" hidden accept="${m.video ? 'video/*' : 'image/*'}">
           </label>
         </div>
         <div id="u-preview"></div>
@@ -105,19 +113,38 @@ export function openUploader({ placeSlug = null, mission = null } = {}) {
       </div>` : ''}
 
       <div class="field">
-        <label>✏️ 한 줄 메모 <span class="muted small">(선택)</span></label>
-        <input type="text" id="u-caption" maxlength="60" placeholder="예: 천지 앞에서 다같이!" value="${esc(sel.caption)}">
+        ${free ? `
+          <label>💬 코멘트 <span class="muted small">(짧게라도 남겨주세요)</span></label>
+          <textarea id="u-caption" rows="2" maxlength="200"
+            placeholder="예: ${esc(m.example || '그때 무슨 일이 있었나요?')}">${esc(sel.caption)}</textarea>
+          <span class="hint">이 한마디가 나중에 쇼츠 자막이 됩니다.</span>
+        ` : `
+          <label>✏️ 한 줄 메모 <span class="muted small">(선택)</span></label>
+          <input type="text" id="u-caption" maxlength="60" placeholder="예: 천지 앞에서 다같이!" value="${esc(sel.caption)}">
+        `}
       </div>`;
 
     // 방문지
-    body.querySelector('#u-place').onchange = (e) => { sel.place = e.target.value; render(); };
+    body.querySelector('#u-place').onchange = (e) => {
+      sel.place = e.target.value;
+      const next = validMission(sel.mission, sel.place);
+      if (next !== sel.mission) {
+        // 사진 미션 ↔ 영상 미션으로 바뀌면 고른 파일을 쓸 수 없다
+        if (!!missionMeta(next)?.video !== !!missionMeta(sel.mission)?.video) {
+          sel.file = null; sel.prepared = null;
+        }
+        sel.mission = next;
+        sel.tags.clear();
+      }
+      render();
+    };
 
     // 미션
     body.querySelectorAll('[data-m]').forEach((tile) => {
       tile.onclick = () => {
         const k = tile.dataset.m;
-        const wasVideo = sel.mission === 'video' || sel.mission === 'vlog';
-        const isVideo = k === 'video' || k === 'vlog';
+        const wasVideo = !!missionMeta(sel.mission)?.video;
+        const isVideo = !!missionMeta(k)?.video;
         sel.mission = k;
         if (wasVideo !== isVideo) { sel.file = null; sel.prepared = null; }
         if (!need()) sel.tags.clear();

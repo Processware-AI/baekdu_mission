@@ -1,4 +1,4 @@
-import { S, progressOf, tripDay } from '../state.js';
+import { S, progressOf, tripDay, missionsFor, isFreePlace } from '../state.js';
 import { esc, sheet } from '../util.js';
 import { openUploader } from './uploader.js';
 
@@ -118,7 +118,8 @@ export function showPlace(slug) {
   const p = S.placeBySlug.get(slug);
   if (!p) return;
   const pr = progressOf(slug);
-  const missions = S.bundle.missions;
+  const missions = missionsFor(slug);
+  const free = isFreePlace(slug);
 
   const s = sheet({
     title: `${p.emoji} ${p.title}`,
@@ -127,14 +128,14 @@ export function showPlace(slug) {
         <img src="/img/${p.img}" alt="${esc(p.title)}">
       </figure>` : ''}
       <div class="chips">
-        <span class="chip accent">${p.day ? `${p.day}일차` : '상시'} ${esc(p.time)}</span>
+        <span class="chip accent">${p.day ? `${p.day}일차 ${esc(p.time)}` : esc(p.time)}</span>
         <span class="chip">${esc(p.area)}</span>
         ${p.boost > 1 ? '<span class="chip gold">⭐ 핵심 스팟 · 점수 ×2</span>' : ''}
       </div>
       <p style="margin:0;font-size:13.5px;line-height:1.6">${esc(p.desc)}</p>
       ${p.tip ? `<div class="alert info"><div class="ic">💡</div><div><p>${esc(p.tip)}</p></div></div>` : ''}
       <div>
-        <div class="section-title" style="margin-bottom:8px">내 미션 현황</div>
+        <div class="section-title" style="margin-bottom:8px">${free ? '어떤 걸 찍어볼까요' : '내 미션 현황'}</div>
         <div class="mgrid">
           ${missions.map((m) => {
             const c = pr.mine?.[m.key] || 0;
@@ -145,7 +146,9 @@ export function showPlace(slug) {
           }).join('')}
         </div>
       </div>
-      <div class="hint">미션 한 칸에는 <b>가장 좋은 것 한 장만</b> 남습니다. 다시 올리면 교체됩니다.<br>
+      <div class="hint">${free
+        ? '주제마다 <b>한 장씩</b> 남습니다. 사진에 <b>코멘트</b>를 한마디 곁들이면 나중에 쇼츠 만들 때 그 장면이 살아납니다.'
+        : '미션 한 칸에는 <b>가장 좋은 것 한 장만</b> 남습니다. 다시 올리면 교체됩니다.'}<br>
         이 방문지 전체 ${pr.all.count}장 · ${pr.all.people}명 참여
         ${pr.conquered ? ' · <b style="color:var(--ok)">정복 완료 🏔️</b>' : ''}</div>`,
     foot: `<button class="btn primary block" id="pl-up">📸 여기 사진 올리기</button>`,

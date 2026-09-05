@@ -1,7 +1,7 @@
 import db from '../db.js';
-import { MISSIONS, CONQUER_KEYS, MEMBER_MISSION_KEYS, PLACES } from '../data/places.js';
+import { MISSIONS, FREE_MISSIONS, CONQUER_KEYS, MEMBER_MISSION_KEYS, PLACES } from '../data/places.js';
 
-const BASE = Object.fromEntries(MISSIONS.map((m) => [m.key, m.points]));
+const BASE = Object.fromEntries([...MISSIONS, ...FREE_MISSIONS].map((m) => [m.key, m.points]));
 
 export const RULES = {
   base: BASE,
@@ -9,7 +9,7 @@ export const RULES = {
   tagBonusMaxPeople: 10,
   appearBonus: 3,          // 사진에 "찍힌" 사람이 받는 점수
   firstPlaceBonus: [30, 20, 10], // 방문지별 선착순 1·2·3등
-  conquerBonus: 100,       // 한 방문지에서 1인·2인·3인·4인+ 모두 달성
+  conquerBonus: 100,       // 한 방문지에서 6가지 미션 모두 달성
   dayClearBonus: 50,       // 해당 일차의 모든 방문지에 1장 이상
   fullClearBonus: 200,     // 전 일정 모든 방문지에 1장 이상
 };
@@ -89,7 +89,7 @@ export function awardForUpload({ userId, uploadId, placeSlug, mission, taggedIds
     if (ev) events.push(ev);
   }
 
-  // 4) 방문지 정복 (1인·2인·3인·4인+ 모두)
+  // 4) 방문지 정복 (1인·2인·3인·4인+·장소/풍경·영상 모두)
   const mine = new Set(qMyMissionsAtPlace.all(userId, placeSlug).map((r) => r.mission));
   if (CONQUER_KEYS.every((k) => mine.has(k))) {
     const pts = Math.round(RULES.conquerBonus * boost);
@@ -166,7 +166,7 @@ const BADGE_DEFS = [
   { key: 'first_step', emoji: '🥾', name: '첫걸음', desc: '첫 업로드 완료' },
   { key: 'selfie',     emoji: '🤳', name: '셀카왕', desc: '독사진 10장' },
   { key: 'network',    emoji: '🤝', name: '인맥왕', desc: '태그 누적 30명' },
-  { key: 'conqueror',  emoji: '🏔️', name: '정복자', desc: '한 방문지 4미션 올클리어' },
+  { key: 'conqueror',  emoji: '🏔️', name: '정복자', desc: '한 방문지 6미션 올클리어' },
   { key: 'director',   emoji: '🎬', name: '감독',   desc: '영상 5개 업로드' },
   { key: 'lightning',  emoji: '⚡', name: '번개',   desc: '방문지 선착순 1등 3회' },
   { key: 'diligent',   emoji: '📅', name: '개근상', desc: '4일 모두 업로드' },

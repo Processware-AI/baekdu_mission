@@ -12,25 +12,82 @@ export const MISSIONS = [
   { key: 'duo',   label: '2인 사진',   short: '2인',   people: 2,  points: 25, emoji: '👬', desc: '나 포함 정확히 2명' },
   { key: 'trio',  label: '3인 사진',   short: '3인',   people: 3,  points: 45, emoji: '👨‍👩‍👦', desc: '나 포함 정확히 3명' },
   { key: 'quad',  label: '4인 이상',   short: '4인+',  people: 4,  points: 70, emoji: '👨‍👩‍👧‍👦', desc: '나 포함 4명 이상' },
-  { key: 'video', label: '영상',       short: '영상',  people: 0,  points: 40, emoji: '🎥', desc: '10~60초 짧은 영상이 편집하기 가장 좋아요' },
+  { key: 'scenery', label: '장소/풍경', short: '풍경', people: 0, points: 15, emoji: '🏞️', desc: '사람 없이 장소와 풍경만 — 쇼츠의 오프닝 컷이 됩니다' },
+  { key: 'video', label: '영상',       short: '영상',  people: 0,  points: 40, emoji: '🎥', video: true, desc: '10~60초 짧은 영상이 편집하기 가장 좋아요' },
+];
+
+/**
+ * '자유 / 기타' 방문지 전용 미션.
+ *
+ * 버스 안이나 길거리에서 찍은 자투리 컷을 1인·2인·3인으로 나누는 건 의미가 없다.
+ * 대신 "무엇을 찍을까"를 주제로 제시하고, 코멘트를 곁들이게 한다.
+ * 여행이 끝나고 쇼츠를 만들 때 이 코멘트가 장면의 맥락이 된다.
+ *
+ * example : 코멘트 입력칸에 보여줄 예시 문장
+ */
+export const FREE_MISSIONS = [
+  { key: 'free-bus', label: '이동 중', short: '이동 중', points: 15, emoji: '🚌',
+    desc: '버스·비행기 안, 차창 밖으로 흘러가는 풍경',
+    example: '창밖으로 만주 벌판이 끝없이 이어졌다' },
+  { key: 'free-food', label: '먹거리', short: '먹거리', points: 15, emoji: '🍜',
+    desc: '식당 상차림, 길거리 간식, 온천 계란',
+    example: '온천 계란 처음 먹어봤는데 고소하다' },
+  { key: 'free-stay', label: '숙소', short: '숙소', points: 15, emoji: '🏨',
+    desc: '호텔 로비, 방에서 내다본 창밖',
+    example: '방에서 내다본 이도백하의 아침' },
+  { key: 'free-street', label: '거리·간판', short: '거리', points: 15, emoji: '🏙️',
+    desc: '시장, 한글 간판, 사람 사는 풍경',
+    example: '간판이 한글이라 괜히 반가웠다' },
+  { key: 'free-sky', label: '하늘·날씨', short: '하늘', points: 15, emoji: '☁️',
+    desc: '구름, 노을, 별, 비 오는 창가',
+    example: '천지 오르기 직전에 하늘이 열렸다' },
+  { key: 'free-fun', label: '웃긴 순간', short: '웃긴 컷', points: 15, emoji: '😂',
+    desc: '빵 터진 표정, 어이없는 실수, 장난',
+    example: '모자가 바람에 날아가 버렸다' },
+  { key: 'free-together', label: '함께', short: '함께', points: 15, emoji: '🤝',
+    desc: '나란히 걷는 뒷모습, 챙겨주는 손길',
+    example: '계단에서 손 잡아준 앞사람' },
+  { key: 'free-thing', label: '소품·기념품', short: '소품', points: 15, emoji: '🎒',
+    desc: '모자와 타올, 신발, 오늘의 필수품',
+    example: '오늘의 삼종세트 — 모자, 타올, 우비' },
+  { key: 'free-clip', label: '짧은 영상', short: '영상', points: 25, emoji: '🎬', video: true,
+    desc: '10~60초. 소리가 담기면 더 좋습니다',
+    example: '폭포 소리가 여기까지 들린다' },
+  { key: 'free-etc', label: '기타', short: '기타', points: 15, emoji: '📌',
+    desc: '위 주제 어디에도 안 맞는 순간. 코멘트로 설명해 주세요',
+    example: '설명하기 어렵지만 그냥 남기고 싶었던 장면' },
 ];
 
 export const ADMIN_MISSIONS = [
   { key: 'group',  label: '단체사진', short: '단체', points: 0, emoji: '📸', desc: '운영진 전용 — 전체 단체 사진' },
-  { key: 'vlog',   label: '브이로그', short: '브이로그', points: 0, emoji: '🎬', desc: '운영진 전용 — 브이로그/스케치 영상' },
+  { key: 'vlog',   label: '브이로그', short: '브이로그', points: 0, emoji: '🎬', video: true, desc: '운영진 전용 — 브이로그/스케치 영상' },
 ];
 
-export const ALL_MISSION_KEYS = [...MISSIONS, ...ADMIN_MISSIONS].map((m) => m.key);
-export const MEMBER_MISSION_KEYS = MISSIONS.map((m) => m.key);
-/** 방문지 "정복" 판정에 쓰이는 사진 미션 4종 */
-export const CONQUER_KEYS = ['solo', 'duo', 'trio', 'quad'];
+export const ALL_MISSION_KEYS = [...MISSIONS, ...FREE_MISSIONS, ...ADMIN_MISSIONS].map((m) => m.key);
+export const MEMBER_MISSION_KEYS = [...MISSIONS, ...FREE_MISSIONS].map((m) => m.key);
+/** 영상 파일만 받는 미션 */
+export const VIDEO_MISSION_KEYS = [...MISSIONS, ...FREE_MISSIONS, ...ADMIN_MISSIONS]
+  .filter((m) => m.video).map((m) => m.key);
+/** 방문지 "정복" 판정에 쓰이는 미션 6종 (자유/기타는 정복 대상이 아니다) */
+export const CONQUER_KEYS = ['solo', 'duo', 'trio', 'quad', 'scenery', 'video'];
 
 export const MISSION_FOLDER = {
   solo: '01_독사진',
   duo: '02_2인',
   trio: '03_3인',
   quad: '04_4인이상',
-  video: '05_영상',
+  scenery: '05_장소풍경',
+  video: '06_영상',
+  'free-bus': '10_이동중',
+  'free-food': '11_먹거리',
+  'free-stay': '12_숙소',
+  'free-street': '13_거리',
+  'free-sky': '14_하늘',
+  'free-fun': '15_웃긴순간',
+  'free-together': '16_함께',
+  'free-thing': '17_소품',
+  'free-clip': '18_짧은영상',
+  'free-etc': '19_기타',
   group: '90_단체사진',
   vlog: '91_브이로그',
 };
@@ -122,9 +179,9 @@ export const PLACES = [
 
   // ── 상시 ────────────────────────────────────────────────────────
   { slug: 'free', day: 0, seq: 99, time: '상시', title: '자유 / 기타',
-    area: '전체', emoji: '✨', boost: 1,
+    area: '전체', emoji: '✨', boost: 1, missionSet: 'free',
     desc: '어느 방문지에도 딱 맞지 않는 순간들 (버스 안, 호텔, 길거리 등).',
-    tip: '의외로 이런 컷이 쇼츠에서 제일 재밌습니다.' },
+    tip: '의외로 이런 컷이 쇼츠에서 제일 재밌습니다. 주제를 고르고 한마디 남겨주세요.' },
 ];
 
 export const DAYS = [

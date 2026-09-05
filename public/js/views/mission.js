@@ -1,4 +1,4 @@
-import { S, progressOf, tripDay } from '../state.js';
+import { S, progressOf, tripDay, missionsFor, isFreePlace } from '../state.js';
 import { esc, num } from '../util.js';
 import { openUploader } from './uploader.js';
 import { showPlace } from './schedule.js';
@@ -22,8 +22,10 @@ export default async function renderMission(host, args) {
     <section class="card">
       <h2>🎯 사진 미션</h2>
       <p class="small muted" style="margin:0 0 12px">
-        방문지마다 <b>독사진 · 2인 · 3인 · 4인 이상</b> 네 가지를 채우면 <b>정복 +100점</b>!<br>
+        방문지마다 <b>독사진 · 2인 · 3인 · 4인 이상 · 장소/풍경 · 영상</b>
+        여섯 가지를 채우면 <b>정복 +100점</b>!<br>
         미션 한 칸에는 <b>한 장만</b> 남습니다. 가장 잘 나온 것으로 언제든 교체하세요.<br>
+        <b>자유 / 기타</b>는 인원수 대신 <b>주제</b>를 고르고 코멘트를 남기면 됩니다.<br>
         여행이 끝나면 이 분류 그대로 추억 쇼츠를 만듭니다.
       </p>
       <div class="scorebar">
@@ -37,6 +39,7 @@ export default async function renderMission(host, args) {
       <h2 style="margin-bottom:8px">💯 점수 규칙</h2>
       <div class="chips">
         ${b.missions.map((m) => `<span class="chip">${m.emoji} ${esc(m.short)} +${m.points}</span>`).join('')}
+        <span class="chip">✨ 자유 주제 +15~25</span>
         <span class="chip teal">태그 1명당 +5</span>
         <span class="chip teal">사진에 찍히면 +3</span>
         <span class="chip gold">⭐핵심 스팟 ×2</span>
@@ -72,12 +75,7 @@ export default async function renderMission(host, args) {
               <small>${esc(p.time)} · ${esc(p.area)} · 전체 ${pr.all.count}장</small>
             </div>
             <div class="st">
-              ${pr.conquered ? '<span class="chip ok">정복</span>'
-                : `<span class="chip">${pr.missionDone}/4</span>`}
-              <div class="dots">
-                ${['solo', 'duo', 'trio', 'quad'].map((k) =>
-                  `<i class="${pr.mine?.[k] ? 'on' : ''}"></i>`).join('')}
-              </div>
+              ${statusOf(p, pr)}
             </div>
           </div>`;
         }).join('')}
@@ -98,4 +96,21 @@ export default async function renderMission(host, args) {
   host.querySelectorAll('[data-p]').forEach((n) => {
     n.onclick = () => showPlace(n.dataset.p);
   });
+}
+
+/**
+ * 방문지 카드 오른쪽의 진행 상태.
+ * '자유 / 기타'는 정복 개념이 없고 주제가 9개라, 채운 주제 수만 보여준다.
+ */
+function statusOf(place, pr) {
+  if (isFreePlace(place.slug)) {
+    const themes = missionsFor(place.slug);
+    const done = themes.filter((m) => pr.mine?.[m.key]).length;
+    return `<span class="chip ${done ? 'ok' : ''}">${done}/${themes.length} 주제</span>`;
+  }
+  const keys = (S.bundle?.missions || []).map((m) => m.key);
+  const dots = keys.map((k) => `<i class="${pr.mine?.[k] ? 'on' : ''}"></i>`).join('');
+  return `${pr.conquered ? '<span class="chip ok">정복</span>'
+    : `<span class="chip">${pr.missionDone}/${keys.length}</span>`}
+    <div class="dots">${dots}</div>`;
 }

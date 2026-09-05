@@ -112,7 +112,7 @@ async function main() {
     await page.click('#go-up');
     await page.waitForSelector('.sheet');
     ok(await page.locator('#u-place').isVisible(), '업로드 시트 — 방문지 선택');
-    ok((await page.locator('#u-missions .mtile').count()) === 5, '미션 타일 5개 (참가자)');
+    ok((await page.locator('#u-missions .mtile').count()) === 6, '미션 타일 6개 (참가자)');
 
     // 실제 파일 업로드
     await page.selectOption('#u-place', 'seopa-cheonji');
