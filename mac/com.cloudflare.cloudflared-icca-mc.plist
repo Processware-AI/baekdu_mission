@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  ICCA 백두산 여행 앱 전용 Cloudflare 터널 (고정 주소)
+    https://icca-mc.processware.co.kr  →  이 맥의 127.0.0.1:8080
+
+  설치:
+    sudo cp mac/com.cloudflare.cloudflared-icca-mc.plist /Library/LaunchDaemons/
+    sudo launchctl load /Library/LaunchDaemons/com.cloudflare.cloudflared-icca-mc.plist
+  중지:
+    sudo launchctl unload /Library/LaunchDaemons/com.cloudflare.cloudflared-icca-mc.plist
+  로그:
+    tail -f /Library/Logs/com.cloudflare.cloudflared-icca-mc.err.log
+
+  터널 설정은 ~/.cloudflared/icca-mc.yml 에 있습니다.
+-->
+<plist version="1.0">
+<dict>
+  <key>Label</key>            <string>com.cloudflare.cloudflared-icca-mc</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/opt/homebrew/bin/cloudflared</string>
+    <string>--no-autoupdate</string>
+    <string>--config</string>
+    <string>/Users/dongseok/.cloudflared/icca-mc.yml</string>
+    <string>tunnel</string>
+    <string>run</string>
+  </array>
+  <key>RunAtLoad</key>        <true/>
+  <key>KeepAlive</key>        <true/>
+  <key>StandardOutPath</key>  <string>/Library/Logs/com.cloudflare.cloudflared-icca-mc.out.log</string>
+  <key>StandardErrorPath</key><string>/Library/Logs/com.cloudflare.cloudflared-icca-mc.err.log</string>
+  <key>ThrottleInterval</key> <integer>5</integer>
+</dict>
+</plist>
