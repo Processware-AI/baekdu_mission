@@ -2,13 +2,25 @@
 <!--
   맥 미니를 켜두고 상시 서버로 쓸 때만 사용하세요. (선택 사항)
 
-  1) 아래 __경로__ 두 곳을 실제 폴더 경로로 바꾸세요.
-     예) /Users/gildong/BaekDu
+  LaunchDaemon 이므로 아무도 로그인하지 않아도 부팅 직후 뜹니다.
+  (LaunchAgent 로 두면 로그인해야 떠서, 무인 운영하려면 자동 로그인을
+   켜야 합니다. 자동 로그인은 맥에 손대는 사람 누구나 계정에 들어올 수
+   있게 되므로 권하지 않습니다.)
+  root 가 아니라 UserName 계정 권한으로 돌기 때문에 data 폴더의
+  파일 소유권도 평소와 같습니다.
+
+  1) 아래 세 가지를 실제 값으로 바꾸세요.
+       __경로__   : 이 폴더의 전체 경로   예) /Users/gildong/BaekDu
+       __사용자__ : 맥 계정 이름          터미널에 whoami
+       __NODE__   : node 의 전체 경로     터미널에 which node
+                    애플 실리콘 맥은 보통 /opt/homebrew/bin/node,
+                    인텔 맥은 /usr/local/bin/node 입니다.
+                    launchd 는 PATH 를 물려받지 않으므로 절대경로여야 합니다.
   2) 설치:
-       cp mac/com.icca.baekdu.plist ~/Library/LaunchAgents/
-       launchctl load ~/Library/LaunchAgents/com.icca.baekdu.plist
+       sudo cp mac/com.icca.baekdu.plist /Library/LaunchDaemons/
+       sudo launchctl load /Library/LaunchDaemons/com.icca.baekdu.plist
   3) 중지:
-       launchctl unload ~/Library/LaunchAgents/com.icca.baekdu.plist
+       sudo launchctl unload /Library/LaunchDaemons/com.icca.baekdu.plist
   4) 로그 확인:
        tail -f __경로__/data/server.log
 -->
@@ -21,18 +33,32 @@
   <array>
     <string>/usr/bin/caffeinate</string>
     <string>-is</string>
-    <string>/usr/local/bin/node</string>
+    <string>__NODE__</string>
     <string>__경로__/server/index.js</string>
   </array>
 
+  <!-- root 가 아니라 이 계정 권한으로 실행한다 -->
+  <key>UserName</key>
+  <string>__사용자__</string>
+
   <key>WorkingDirectory</key>
   <string>__경로__</string>
+
+  <!-- 데몬은 환경변수를 거의 물려받지 않는다 -->
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>HOME</key>
+    <string>/Users/__사용자__</string>
+  </dict>
 
   <key>RunAtLoad</key>
   <true/>
 
   <key>KeepAlive</key>
   <true/>
+
+  <key>ThrottleInterval</key>
+  <integer>5</integer>
 
   <key>StandardOutPath</key>
   <string>__경로__/data/server.log</string>

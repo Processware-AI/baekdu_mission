@@ -239,19 +239,32 @@ brew install cloudflared
 
 **⑤ 맥 미니를 상시 서버로 쓰기** (선택)
 
-맥 미니를 켜두고 여행 내내 돌릴 거라면, 로그인할 때 자동 실행되게 할 수 있습니다.
-`mac/com.icca.baekdu.plist` 파일을 열어 `__경로__` 세 곳을 실제 폴더 경로로 바꾼 뒤:
+맥 미니를 켜두고 여행 내내 돌릴 거라면 부팅할 때 자동 실행되게 할 수 있습니다.
+`mac/com.icca.baekdu.plist` 파일을 열어 세 곳을 실제 값으로 바꾸세요.
+
+| 자리표시자 | 값 | 확인 방법 |
+|---|---|---|
+| `__경로__` | 이 폴더의 전체 경로 | 예) `/Users/gildong/BaekDu` |
+| `__사용자__` | 맥 계정 이름 | 터미널에 `whoami` |
+| `__NODE__` | node 의 전체 경로 | 터미널에 `which node` |
+
+`node` 경로는 애플 실리콘 맥이면 보통 `/opt/homebrew/bin/node`, 인텔 맥이면
+`/usr/local/bin/node` 입니다. launchd 는 PATH 를 물려받지 않으므로 반드시 절대경로여야 합니다.
 
 ```bash
-cp mac/com.icca.baekdu.plist ~/Library/LaunchAgents/
-launchctl load ~/Library/LaunchAgents/com.icca.baekdu.plist   # 시작
-launchctl unload ~/Library/LaunchAgents/com.icca.baekdu.plist # 중지
-tail -f data/server.log                                       # 로그 보기
+sudo cp mac/com.icca.baekdu.plist /Library/LaunchDaemons/
+sudo launchctl load /Library/LaunchDaemons/com.icca.baekdu.plist   # 시작
+sudo launchctl unload /Library/LaunchDaemons/com.icca.baekdu.plist # 중지
+tail -f data/server.log                                            # 로그 보기
 ```
 
 서버가 죽어도 자동으로 다시 뜨고(`KeepAlive`), `caffeinate`로 잠자기도 막습니다.
-`node` 경로가 `/usr/local/bin/node`가 아니면(Apple Silicon + Homebrew는 보통
-`/opt/homebrew/bin/node`) plist 안의 경로를 `which node` 결과로 바꿔주세요.
+
+> **LaunchAgent 가 아니라 LaunchDaemon 인 이유**
+> LaunchAgent 는 사람이 로그인해야 뜹니다. 무인 운영하려면 자동 로그인을 켜야 하는데,
+> 그러면 맥에 손대는 사람 누구나 비밀번호 없이 계정에 들어올 수 있습니다.
+> LaunchDaemon 은 로그인 없이 부팅 직후 뜨고, `UserName` 지정으로 root 가 아닌
+> 내 계정 권한으로 돌기 때문에 `data` 폴더 파일 소유권도 평소와 같습니다.
 
 **⑥ 참가자에게 안내할 것**
 
