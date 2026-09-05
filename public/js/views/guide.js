@@ -108,12 +108,29 @@ export default async function renderGuide(host) {
 
     <section class="card">
       <h2>🏢 여행사</h2>
+      ${b.trip.agencyImg ? `
+        <figure class="figure" style="margin-bottom:12px">
+          <img loading="lazy" src="/img/${b.trip.agencyImg}" alt="힐링투어 남동 명함">
+          <figcaption>📇 힐링투어 남동 · ${esc(b.trip.agencyManager || '')}</figcaption>
+        </figure>` : ''}
       <div class="kv">
-        <dt>여행사</dt><dd>${esc(b.trip.agency)}</dd>
+        <dt>여행사</dt><dd>${esc(b.trip.agency)}${
+          b.trip.agencyBrand ? `<br><span class="muted small">${esc(b.trip.agencyBrand)}</span>` : ''}</dd>
+        ${b.trip.agencyManager ? `<dt>담당</dt><dd>${esc(b.trip.agencyManager)}</dd>` : ''}
+        <dt>대표전화</dt><dd><a href="tel:${esc(b.trip.agencyTel.replace(/-/g, ''))}">${esc(b.trip.agencyTel)}</a></dd>
+        ${b.trip.agencyMobile ? `<dt>휴대전화</dt><dd><a href="tel:${esc(b.trip.agencyMobile.replace(/-/g, ''))}">${esc(b.trip.agencyMobile)}</a></dd>` : ''}
+        ${b.trip.agencyFax ? `<dt>팩스</dt><dd>${esc(b.trip.agencyFax)}</dd>` : ''}
+        ${b.trip.agencyEmail ? `<dt>이메일</dt><dd><a href="mailto:${esc(b.trip.agencyEmail)}">${esc(b.trip.agencyEmail)}</a></dd>` : ''}
         <dt>주소</dt><dd style="text-align:right">${esc(b.trip.agencyAddr)}</dd>
-        <dt>전화</dt><dd><a href="tel:${esc(b.trip.agencyTel.replace(/-/g, ''))}">${esc(b.trip.agencyTel)}</a></dd>
         <dt>피켓명</dt><dd>${esc(b.trip.picket)}</dd>
       </div>
+      ${(b.trip.agencyServices || []).length ? `
+        <div class="section-title" style="margin-top:14px">취급 업무</div>
+        <div style="display:grid;gap:9px;margin-top:8px">
+          ${b.trip.agencyServices.map((v) => `
+            <div class="row"><div class="em">${v.icon}</div><div class="t">
+              <b>${esc(v.title)}</b><small>${esc(v.desc)}</small></div></div>`).join('')}
+        </div>` : ''}
     </section>`;
 }
 
