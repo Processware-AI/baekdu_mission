@@ -150,14 +150,22 @@ export function lightbox(idx, host) {
     lb.querySelector('[data-dl]').onclick = () => {
       window.open(`/api/media/${it.id}?download=1`, '_blank');
     };
-    lb.querySelector('[data-del]')?.addEventListener('click', async () => {
-      if (!await confirmSheet('삭제할까요?', '이 사진/영상을 완전히 삭제합니다. 되돌릴 수 없습니다.', '삭제')) return;
+    const delBtn = lb.querySelector('[data-del]');
+    delBtn?.addEventListener('click', async () => {
+      // 확인창이 떠 있는 동안 휴지통을 또 누르면 확인창이 겹쳐 쌓인다
+      if (delBtn.disabled) return;
+      delBtn.disabled = true;
       try {
+        if (!await confirmSheet('삭제할까요?', '이 사진/영상을 완전히 삭제합니다. 되돌릴 수 없습니다.', '삭제')) return;
         await api.del(`/api/uploads/${it.id}`);
         toast('삭제했습니다.', 'ok');
         close();
         renderGallery(host);
-      } catch (e) { toast(e.message, 'err'); }
+      } catch (e) {
+        toast(e.message, 'err');
+      } finally {
+        delBtn.disabled = false;
+      }
     });
 
     // 스와이프
