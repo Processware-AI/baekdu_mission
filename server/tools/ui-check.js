@@ -126,8 +126,11 @@ async function main() {
       'HBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/wAALCAABAAEBAREA/8QAFAABAAAAAAAA' +
       'AAAAAAAAAAAACf/EABQQAQAAAAAAAAAAAAAAAAAAAAD/2gAIAQEAAD8AKp//2Q==', 'base64'));
     await page.setInputFiles('#u-lib', jpg);
-    await page.waitForTimeout(900);
-    ok(await page.locator('#u-preview img').isVisible(), '선택한 사진 미리보기');
+    // 미리보기는 canvas 처리가 끝나야 뜬다. 고정 시간으로 기다리면
+    // 머신 사정에 따라 세 번에 한 번쯤 놓쳐서, 나타날 때까지 기다린다.
+    const previewShown = await page.waitForSelector('#u-preview img', { timeout: 10000 })
+      .then(() => true).catch(() => false);
+    ok(previewShown, '선택한 사진 미리보기');
 
     const btnBefore = await page.locator('#up-go').textContent();
     ok(btnBefore.includes('선택'), `인원 미달 시 버튼 안내 (${btnBefore.trim()})`);
