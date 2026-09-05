@@ -144,6 +144,23 @@ export async function queueSize() {
   return (await qAll()).length;
 }
 
+/**
+ * 대기열 비우기.
+ * 신호가 안 잡히는 곳에서 계속 재시도하는 게 부담스러울 때,
+ * "이건 나중에 다시 올릴래" 하고 접을 수 있어야 한다.
+ * 원본 사진은 휴대폰에 그대로 있으므로 되돌릴 수 있는 선택이다.
+ */
+export async function clearQueue() {
+  const jobs = await qAll();
+  for (const j of jobs) {
+    await qDel(j.uid);
+    live.delete(j.uid);
+  }
+  pendingCount = 0;
+  emit({ pending: 0, running: false });
+  return jobs.length;
+}
+
 /** 이 크기 아래면 보내기 전에 통째로 메모리에 올린다 (영상은 너무 커서 제외) */
 const MATERIALIZE_LIMIT = 80 * 1024 * 1024;
 

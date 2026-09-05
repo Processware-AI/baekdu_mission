@@ -1,7 +1,7 @@
 import { api } from './api.js';
-import { $, esc, toast, el } from './util.js';
+import { $, esc, toast, el, confirmSheet } from './util.js';
 import { S, loadMe, loadBundle, refreshProgress } from './state.js';
-import { onQueue, runQueue, queueSize } from './upload.js';
+import { onQueue, runQueue, queueSize, clearQueue } from './upload.js';
 
 import renderHome from './views/home.js';
 import renderSchedule from './views/schedule.js';
@@ -109,13 +109,29 @@ function wireQueueBar() {
         <span style="flex:1">업로드 중 ${pct}% <span class="muted">· ${st.pending}개 남음</span></span>`;
     } else {
       bar.innerHTML = `<span>${st.serverError ? '⚠️' : '📡'}</span>
-        <span style="flex:1">대기 중 <b>${st.pending}개</b> — ${
-          st.serverError ? '서버 오류로 멈췄습니다' : '연결되면 자동 업로드'}</span>
-        <button class="btn sm ghost" id="qretry">지금 시도</button>`;
+        <span style="flex:1">대기 <b>${st.pending}개</b> · ${
+          st.serverError ? '서버 오류로 멈춤' : '연결되면 자동'}</span>
+        <button class="btn sm ghost" id="qretry">지금 시도</button>
+        <button class="btn sm ghost" id="qcancel">취소</button>`;
       bar.querySelector('#qretry').onclick = () => runQueue();
+      bar.querySelector('#qcancel').onclick = () => cancelQueue(st.pending);
     }
   });
   queueSize().then((n) => { if (n) runQueue({ silent: true }); });
+}
+
+/** 대기 중인 업로드를 접는다. 되돌릴 수 있는 선택이지만 한 번 확인은 받는다. */
+export async function cancelQueue(pending) {
+  const yes = await confirmSheet(
+    '대기 중인 업로드를 취소할까요?',
+    `아직 못 올린 ${pending}개를 대기열에서 지웁니다. `
+    + '사진과 영상은 휴대폰에 그대로 있으니 나중에 다시 올릴 수 있습니다.',
+    '취소하기',
+  );
+  if (!yes) return 0;
+  const removed = await clearQueue();
+  toast(`🗑 대기 중이던 <b>${removed}개</b>를 지웠습니다.`, '', 3000);
+  return removed;
 }
 
 // ── 로그인 화면 ────────────────────────────────────────────────

@@ -2,7 +2,7 @@ import { api } from '../api.js';
 import { S } from '../state.js';
 import { esc, num, toast, sheet, confirmSheet } from '../util.js';
 import { QUALITY, getQuality, setQuality, queueSize, runQueue } from '../upload.js';
-import { suspendRouting } from '../app.js';
+import { suspendRouting, cancelQueue } from '../app.js';
 
 export default async function renderMe(host) {
   const u = S.user;
@@ -83,7 +83,10 @@ export default async function renderMe(host) {
         <div class="alert warn" style="margin-top:12px"><div class="ic">📡</div><div>
           <b>업로드 대기 중 ${pending}건</b>
           <p>연결이 되면 자동으로 올라갑니다. 앱을 지우면 대기열도 사라지니 주의하세요.</p></div></div>
-        <button class="btn ghost block sm" style="margin-top:8px" id="m-retry">지금 다시 시도</button>` : ''}
+        <div class="btn-row" style="margin-top:8px">
+          <button class="btn ghost sm" style="flex:1" id="m-retry">지금 다시 시도</button>
+          <button class="btn ghost sm" style="flex:1" id="m-cancel">대기열 취소</button>
+        </div>` : ''}
     </section>
 
     <section class="card">
@@ -107,6 +110,9 @@ export default async function renderMe(host) {
     toast('저장했습니다.', 'ok', 1500);
   };
   host.querySelector('#m-retry')?.addEventListener('click', () => runQueue());
+  host.querySelector('#m-cancel')?.addEventListener('click', async () => {
+    if (await cancelQueue(pending)) renderMe(host);
+  });
   host.querySelector('#m-mine')?.addEventListener('click', () => { location.hash = '#/gallery'; });
   host.querySelector('#m-in')?.addEventListener('click', () => { location.hash = '#/gallery'; });
   host.querySelector('#m-admin')?.addEventListener('click', () => { location.hash = '#/admin'; });
