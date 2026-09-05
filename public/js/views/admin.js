@@ -18,6 +18,7 @@ export default async function renderAdmin(host) {
       <button data-v="export" class="${tab === 'export' ? 'on' : ''}">📦 내보내기</button>
       <button data-v="people" class="${tab === 'people' ? 'on' : ''}">👥 참가자</button>
       <button data-v="notice" class="${tab === 'notice' ? 'on' : ''}">📢 공지</button>
+      <button data-v="reset" class="${tab === 'reset' ? 'on' : ''}">🧹 초기화</button>
     </div>
     <div id="a-body"></div>`;
 
@@ -32,6 +33,73 @@ export default async function renderAdmin(host) {
   if (tab === 'export') await exportView(body);
   if (tab === 'people') await peopleView(body);
   if (tab === 'notice') await noticeView(body, host);
+  if (tab === 'reset') await resetView(body);
+}
+
+// ── 초기화 ────────────────────────────────────────────────────
+const RESET_PHRASE = '전체삭제';
+
+/**
+ * 여행 전 테스트로 올린 사진·영상을 한 번에 지운다.
+ * 되돌릴 수 없으므로 문구 입력 + 한 번 더 확인, 두 단계를 거치게 한다.
+ */
+async function resetView(body) {
+  const s = await api.get('/api/admin/stats');
+  body.innerHTML = `
+    <section class="card">
+      <h2>🧹 사진 · 영상 초기화</h2>
+      <p class="small muted" style="margin:0 0 12px">
+        여행 전 테스트로 올린 자료를 한 번에 지웁니다.
+        <b>출발 전날 한 번</b> 눌러 깨끗한 상태로 시작하세요.
+      </p>
+      <div class="kv">
+        <dt>올라온 자료</dt><dd>${num(s.totals.uploads)}건 (사진 ${num(s.totals.photos)} · 영상 ${num(s.totals.videos)})</dd>
+        <dt>용량</dt><dd>${fmtBytes(s.totals.bytes)}</dd>
+        <dt>올린 사람</dt><dd>${num(s.totals.activeUsers)}명</dd>
+      </div>
+
+      <div class="alert danger" style="margin-top:12px"><div class="ic">⚠️</div><div>
+        <b>되돌릴 수 없습니다</b>
+        <p>사진·영상 파일과 점수·배지·정복 기록이 <b>모두</b> 사라집니다.
+        아깝다 싶으면 먼저 <b>📦 내보내기</b>에서 ZIP을 받아두세요.</p></div></div>
+
+      <div class="alert info"><div class="ic">✅</div><div>
+        <b>그대로 남는 것</b>
+        <p>참가자 명단과 비밀번호, 공지, 일정·안내 내용은 지워지지 않습니다.</p></div></div>
+
+      <div class="field" style="margin-top:12px">
+        <label for="r-confirm">확인 문구 — <b>${RESET_PHRASE}</b> 를 그대로 입력하세요</label>
+        <input type="text" id="r-confirm" placeholder="${RESET_PHRASE}"
+               inputmode="text" autocomplete="off" autocapitalize="off">
+      </div>
+      <button class="btn danger block" id="r-go" disabled>전체 삭제</button>
+    </section>`;
+
+  const input = body.querySelector('#r-confirm');
+  const go = body.querySelector('#r-go');
+  const sync = () => { go.disabled = input.value.trim() !== RESET_PHRASE; };
+  input.oninput = sync;
+  sync();
+
+  go.onclick = async () => {
+    const yes = await confirmSheet(
+      '정말 전부 지울까요?',
+      `사진·영상 ${s.totals.uploads}건과 모든 점수 기록이 사라집니다. 되돌릴 수 없습니다.`,
+      '전부 삭제',
+    );
+    if (!yes) return;
+    go.disabled = true;
+    go.textContent = '지우는 중…';
+    try {
+      const r = await api.post('/api/admin/reset-uploads', { confirm: input.value.trim() });
+      toast(`🧹 <b>초기화 완료</b><br>사진·영상 ${r.uploads}건, 점수기록 ${r.events}건을 지웠습니다.`, 'ok', 5000);
+      setTimeout(() => location.reload(), 1200);
+    } catch (e) {
+      toast(e.message || '초기화에 실패했습니다.', 'err', 5000);
+      go.textContent = '전체 삭제';
+      sync();
+    }
+  };
 }
 
 // ── 현황 ──────────────────────────────────────────────────────
@@ -126,13 +194,17 @@ async function exportView(body) {
           2일차_02_백두산 천지(서파)·경계비/<br>
           &nbsp;&nbsp;01_독사진/ 박화서_20260911-110233_a1b2.jpg<br>
           &nbsp;&nbsp;02_2인/ · 03_3인/ · 04_4인이상/<br>
-          &nbsp;&nbsp;05_영상/ · 90_단체사진/ · 91_브이로그/</p></div></div>
+          &nbsp;&nbsp;05_장소풍경/ · 06_영상/<br>
+          &nbsp;&nbsp;90_단체사진/ · 91_브이로그/<br>
+          0일차_상시_99_자유 · 기타/<br>
+          &nbsp;&nbsp;10_이동중/ · 11_먹거리/ … 19_기타/</p></div></div>
     </section>
 
     <section class="card">
       <h2>🎬 쇼츠 만들 때</h2>
       <ul class="list-plain">
-        <li><b>세로 영상</b>은 <code>05_영상</code>·<code>91_브이로그</code> 폴더에서 바로 고르세요.</li>
+        <li><b>세로 영상</b>은 <code>06_영상</code>·<code>91_브이로그</code> 폴더에서 바로 고르세요.</li>
+        <li><code>05_장소풍경</code>은 사람이 없는 컷이라 <b>오프닝·전환 컷</b>으로 쓰기 좋습니다.</li>
         <li><code>04_4인이상</code>과 <code>90_단체사진</code>이 하이라이트 컷으로 가장 잘 맞습니다.</li>
         <li>CSV의 <b>함께찍은사람</b> 열로 인물별 편집본을 만들 수 있습니다.</li>
         <li>파일명 앞부분이 업로더 이름이라 사람별 정렬도 바로 됩니다.</li>

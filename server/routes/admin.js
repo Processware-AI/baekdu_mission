@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import bcrypt from 'bcryptjs';
 import archiver from 'archiver';
 import db from '../db.js';
-import { UPLOAD_DIR } from '../config.js';
+import { UPLOAD_DIR, THUMB_DIR } from '../config.js';
 import { requireAdmin } from '../middleware/auth.js';
 import { digits } from '../seed.js';
 import { MISSION_FOLDER } from '../data/places.js';
@@ -43,6 +43,43 @@ router.get('/stats', (_req, res) => {
   `).all();
 
   res.json({ totals, byPlace, byMission, silent });
+});
+
+/**
+ * 사진·영상 전체 초기화.
+ *
+ * 여행 당일까지 테스트로 올린 자료를 한 번에 지우기 위한 기능이다.
+ * 되돌릴 수 없으므로 확인 문구를 정확히 받았을 때만 실행한다.
+ * 참가자 명단·비밀번호·공지는 건드리지 않는다.
+ */
+const RESET_PHRASE = '전체삭제';
+
+router.post('/reset-uploads', (req, res) => {
+  if (String(req.body?.confirm || '').trim() !== RESET_PHRASE) {
+    return res.status(400).json({
+      error: `확인 문구가 다릅니다. "${RESET_PHRASE}" 를 정확히 입력해 주세요.`,
+    });
+  }
+
+  const before = db.prepare(
+    'SELECT COUNT(*) AS cnt, COALESCE(SUM(bytes), 0) AS bytes FROM uploads'
+  ).get();
+  const events = db.prepare('SELECT COUNT(*) AS cnt FROM score_events').get().cnt;
+
+  // score_events 는 upload_id 로 연결된 것만 자동 삭제되므로(수동 조정분은 남는다) 직접 비운다
+  db.transaction(() => {
+    db.prepare('DELETE FROM uploads').run();
+    db.prepare('DELETE FROM score_events').run();
+  })();
+
+  // DB 에 없는 잔여 파일까지 정리되도록 폴더째 비운다
+  for (const dir of [UPLOAD_DIR, THUMB_DIR]) {
+    fs.rmSync(dir, { recursive: true, force: true });
+    fs.mkdirSync(dir, { recursive: true });
+  }
+
+  console.log(`[reset] ${req.user.name}: 사진·영상 ${before.cnt}건 · 점수기록 ${events}건 초기화`);
+  res.json({ ok: true, uploads: before.cnt, bytes: before.bytes, events });
 });
 
 /** 참가자 관리 (연락처 포함 — 운영진만) */

@@ -300,6 +300,32 @@ async function main() {
     ok(delMine.status === 200, '본인 자료는 삭제 가능');
     ok(!fs.existsSync(path.join(expected, files[0] || 'x')), '삭제 시 실제 파일도 제거');
 
+    console.log('\n▶ 사진·영상 초기화');
+    const resetAsMember = await req('POST', '/api/admin/reset-uploads', { json: { confirm: '전체삭제' } });
+    ok(resetAsMember.status === 403, '참가자는 초기화 불가');
+
+    await req('POST', '/api/auth/login', { json: { name: 'admin', password: 'testpw123' } });
+    const badPhrase = await req('POST', '/api/admin/reset-uploads', { json: { confirm: '삭제' } });
+    ok(badPhrase.status === 400, '확인 문구가 다르면 거부');
+
+    const beforeReset = await req('GET', '/api/admin/stats');
+    const reset = await req('POST', '/api/admin/reset-uploads', { json: { confirm: '전체삭제' } });
+    ok(reset.status === 200 && reset.data.uploads === beforeReset.data.totals.uploads,
+      `초기화 실행 (${reset.data.uploads}건 삭제)`);
+
+    const afterReset = await req('GET', '/api/admin/stats');
+    ok(afterReset.data.totals.uploads === 0 && afterReset.data.totals.bytes === 0,
+      '초기화 후 업로드 0건');
+    ok(afterReset.data.totals.members === 75, '참가자 명단은 그대로 (75명)');
+    ok(fs.readdirSync(path.join(TEST_DIR, 'uploads')).length === 0, '업로드 폴더도 비워짐');
+
+    const notices = await req('GET', '/api/bundle');
+    ok(notices.data.notices.length > 0, '공지는 남아 있음');
+
+    await req('POST', '/api/auth/login', { json: { name: '박화서', password: '01087503934' } });
+    const zeroed = await req('GET', '/api/me/summary');
+    ok(zeroed.data.score === 0, `점수도 0점으로 (실제 ${zeroed.data.score})`);
+
     console.log('\n▶ 비밀번호 변경');
     const pw = await req('POST', '/api/auth/password', { json: { current: '01087503934', next: 'newpass1' } });
     ok(pw.status === 200, '비밀번호 변경');
