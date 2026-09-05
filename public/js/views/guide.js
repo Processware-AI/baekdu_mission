@@ -10,17 +10,7 @@ export default async function renderGuide(host) {
       <div style="display:grid;gap:9px">
         ${b.alerts.map((a) => `
           <div class="alert ${a.level}"><div class="ic">${a.icon}</div>
-            <div><b>${esc(a.title)}</b><p>${esc(a.body)}</p></div></div>`).join('')}
-      </div>
-      <div class="figrow" style="margin-top:12px">
-        <figure class="figure warn">
-          <img loading="lazy" src="/img/no-flag.jpg" alt="태극기 반입 금지 안내">
-          <figcaption>🚫 태극기 깃발·액세서리 모두 단속 대상</figcaption>
-        </figure>
-        <figure class="figure warn">
-          <img loading="lazy" src="/img/battery.jpg" alt="보조배터리 기내 반입 규정">
-          <figcaption>🔋 보조배터리는 반드시 몸에 소지</figcaption>
-        </figure>
+            <div><b>${esc(a.title)}</b><p>${esc(a.body)}</p>${figures(a)}</div></div>`).join('')}
       </div>
     </section>
 
@@ -81,21 +71,25 @@ export default async function renderGuide(host) {
     <section class="card">
       <h2>🎁 기념품</h2>
       <p class="small" style="margin:0 0 8px">
-        최종식 산악회장님께서 준비하신 <b>단체모자</b>와 <b>타올</b>을 참석자 전원에게 드립니다.
+        최종식 산악회장님께서 준비하신 <b>단체 모자</b>와 <b>기념 타올</b>을 참석자 전원에게 드립니다.
         인천공항 제주항공 카운터 앞에서 수령하세요.
       </p>
       <div class="figrow" style="margin-bottom:10px">
         <figure class="figure">
           <img loading="lazy" src="/img/gift-hat.jpg" alt="단체모자">
-          <figcaption>🧢 단체모자</figcaption>
+          <figcaption>🧢 단체 모자</figcaption>
         </figure>
         <figure class="figure">
           <img loading="lazy" src="/img/gift-hat-worn.jpg" alt="단체모자 착용 사례">
-          <figcaption>👥 착용 사례</figcaption>
+          <figcaption>👥 모자 착용 사례</figcaption>
         </figure>
       </div>
+      <figure class="figure" style="margin-bottom:10px">
+        <img loading="lazy" src="/img/gift-towel.jpg" alt="기념 타올 디자인">
+        <figcaption>🧣 기념 타올 — From Baekdu to Halla</figcaption>
+      </figure>
       <div class="alert info"><div class="ic">🧢</div><div>
-        <b>여행 기간 동안 단체모자를 함께 착용해 주세요</b>
+        <b>여행 기간 동안 모자와 타올을 함께 착용해 주세요</b>
         <p>많은 인원 속에서 일행 확인이 쉽고, 백두산 단체사진도 훨씬 멋지게 남습니다.</p></div></div>
       <figure class="figure" style="margin-top:12px">
         <img loading="lazy" src="/img/banner.jpg" alt="백두산 여행 플랭카드">
@@ -121,4 +115,20 @@ export default async function renderGuide(host) {
         <dt>피켓명</dt><dd>${esc(b.trip.picket)}</dd>
       </div>
     </section>`;
+}
+
+/**
+ * 주의사항 알림 안에 들어가는 사진.
+ * 안내장·여권·타올처럼 비율이 제각각이라 두 장씩 나란히 놓으면 한쪽이 뭉개진다.
+ * 가로 전체를 쓰도록 세로로 쌓고, 잘라내지 않는다.
+ */
+function figures(a) {
+  const list = a.figures || [];
+  if (!list.length) return '';
+  return `<div class="figstack" style="margin-top:9px">
+    ${list.map((f) => `<figure class="figure">
+      <img loading="lazy" src="/img/${f.src}" alt="${esc(f.cap)}">
+      <figcaption>${esc(f.cap)}</figcaption>
+    </figure>`).join('')}
+  </div>`;
 }

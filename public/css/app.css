@@ -144,7 +144,8 @@ a{color:var(--accent); text-decoration:none}
 .alert{border-radius:var(--r-sm); padding:12px 14px; display:flex; gap:11px; align-items:flex-start;
   border:1px solid transparent}
 .alert .ic{font-size:19px; line-height:1.2; flex:none}
-.alert b{display:block; font-size:13.5px; margin-bottom:3px}
+/* 제목만 블록으로. 본문(p) 안에서 강조한 <b>는 줄바꿈되면 안 된다 */
+.alert > div > b{display:block; font-size:13.5px; margin-bottom:3px}
 .alert p{margin:0; font-size:12.5px; line-height:1.5; opacity:.92}
 .alert.danger{background:var(--danger-soft); color:var(--danger); border-color:color-mix(in srgb,var(--danger) 22%,transparent)}
 .alert.warn{background:var(--warn-soft); color:var(--warn); border-color:color-mix(in srgb,var(--warn) 22%,transparent)}
@@ -380,6 +381,9 @@ textarea{resize:vertical; min-height:70px; line-height:1.5}
 .figure figcaption{padding:8px 11px; font-size:11.5px; color:var(--muted); font-weight:600}
 .figure.warn{border-color:color-mix(in srgb,var(--danger) 30%,transparent)}
 .figrow{display:grid; grid-template-columns:1fr 1fr; gap:9px}
+/* 주의사항 알림 안의 사진 — 비율이 제각각이라 세로로 쌓는다 */
+.figstack{display:grid; gap:9px}
+.alert > div:last-child{min-width:0}
 
 /* 일정 타임라인에서 사진이 있는 구간 */
 .tl .stop .body{display:flex; gap:10px; align-items:flex-start}
