@@ -139,7 +139,7 @@ function loginScreen() {
           <label for="lp">비밀번호</label>
           <input id="lp" type="password" autocomplete="current-password"
                  placeholder="휴대폰 번호 (숫자만)" inputmode="numeric" enterkeyhint="go" required>
-          <span class="hint">처음 로그인하실 때는 <b>본인 휴대폰 번호</b>를 입력하세요. (예: 01012345678)</span>
+          <span class="hint" id="lphint">처음 로그인하실 때는 <b>본인 휴대폰 번호</b>를 입력하세요. (예: 01012345678)</span>
         </div>
         <div class="err" id="lerr" hidden></div>
         <button class="btn primary block" type="submit" id="lbtn">로그인</button>
@@ -151,6 +151,29 @@ function loginScreen() {
     </div>`;
 
   const form = $('#lf'), err = $('#lerr'), btn = $('#lbtn');
+
+  /**
+   * 참가자 비밀번호는 휴대폰 번호라서 숫자 자판을 띄운다.
+   * 하지만 운영진 계정(admin)은 문자가 섞인 비밀번호를 쓰기 때문에
+   * 숫자 자판만 뜨면 휴대폰에서 아예 입력을 못 한다.
+   * 참가자 이름은 모두 한글이므로, 이름에 한글이 없으면 문자 자판으로 바꿔준다.
+   */
+  const nameEl = $('#ln'), pwEl = $('#lp'), pwHint = $('#lphint');
+  const syncKeypad = () => {
+    const typed = nameEl.value.trim();
+    const numeric = !typed || /[ㄱ-ㅎ가-힣]/.test(typed);
+    const mode = numeric ? 'numeric' : 'text';
+    if (pwEl.getAttribute('inputmode') === mode) return;
+    pwEl.setAttribute('inputmode', mode);
+    pwEl.placeholder = numeric ? '휴대폰 번호 (숫자만)' : '비밀번호';
+    pwHint.innerHTML = numeric
+      ? '처음 로그인하실 때는 <b>본인 휴대폰 번호</b>를 입력하세요. (예: 01012345678)'
+      : '운영진 계정입니다. 문자·기호가 섞인 비밀번호를 입력하세요.';
+    // 이미 비밀번호 칸에 커서가 있으면 자판을 다시 띄워야 바뀐 설정이 반영된다
+    if (document.activeElement === pwEl) { pwEl.blur(); pwEl.focus(); }
+  };
+  nameEl.addEventListener('input', syncKeypad);
+
   form.onsubmit = async (e) => {
     e.preventDefault();
     err.hidden = true;
