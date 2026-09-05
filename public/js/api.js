@@ -1,5 +1,8 @@
 const jsonHeaders = { 'Content-Type': 'application/json' };
 
+/** 휴대폰이 새 화면 파일을 받았는지 서버 로그로 확인하기 위한 표식 */
+export const APP_BUILD = '2026-09-05d';
+
 async function handle(res) {
   const ct = res.headers.get('content-type') || '';
   const data = ct.includes('application/json') ? await res.json() : await res.text();
@@ -34,6 +37,7 @@ export const api = {
       const xhr = new XMLHttpRequest();
       xhr.open('POST', url);
       xhr.withCredentials = true;
+      xhr.setRequestHeader('X-App-Build', APP_BUILD);
       xhr.upload.onprogress = (e) => {
         if (e.lengthComputable && onProgress) onProgress(e.loaded / e.total);
       };

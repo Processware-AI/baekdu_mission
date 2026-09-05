@@ -121,6 +121,17 @@ const qPut = (job) => tx('readwrite', (s) => s.put(job));
 const qDel = (uid) => tx('readwrite', (s) => s.delete(uid));
 const qAll = () => tx('readonly', (s) => s.getAll());
 
+/**
+ * 방금 만든 원본(File/Blob)을 uid 로 들고 있는다.
+ *
+ * iOS(WebKit)에서는 사진 파일을 IndexedDB 에 넣었다 꺼내면 껍데기만 오고
+ * 실제 내용은 읽지 못하는 경우가 있다. 그 상태로 전송하면 본문이 시작하자마자
+ * 끊겨서, 서버에는 "본문이 잘렸다"로만 보이고 참가자에게는 연결 탓으로 안내된다.
+ * 그래서 페이지가 살아 있는 동안에는 IndexedDB 를 거치지 않고 이 원본을 쓴다.
+ * (IndexedDB 저장은 앱을 껐다 켠 뒤에도 이어서 올리기 위한 보험으로 그대로 둔다.)
+ */
+const live = new Map();
+
 // ── 큐 처리 ────────────────────────────────────────────────────
 const listeners = new Set();
 export const onQueue = (fn) => { listeners.add(fn); return () => listeners.delete(fn); };
@@ -131,6 +142,46 @@ let pendingCount = 0;
 
 export async function queueSize() {
   return (await qAll()).length;
+}
+
+/** 이 크기 아래면 보내기 전에 통째로 메모리에 올린다 (영상은 너무 커서 제외) */
+const MATERIALIZE_LIMIT = 80 * 1024 * 1024;
+
+/**
+ * 보내기 직전에 파일 내용을 직접 읽어 메모리 사본으로 바꾼다.
+ *
+ * 아이폰(사파리)에서 사진 파일을 그대로 FormData 에 담아 보내면,
+ * 사파리가 파일을 읽지 못해 Content-Length: 0 으로 본문 없이 보내버리는
+ * 일이 있다. 서버는 "본문이 잘렸다"고만 보고, 참가자에게는 신호 탓으로
+ * 안내되어 원인을 찾기 어렵다.
+ * 여기서 우리가 먼저 읽어 두면 크기가 확정되어 정상적으로 전송되고,
+ * 읽기 자체가 실패하면 그 사실을 제대로 알릴 수 있다.
+ */
+async function materialize(job) {
+  const b = job.body;
+  if (!b || !b.size) {
+    throw Object.assign(new Error('사진 파일이 비어 있습니다. 다시 선택해 주세요.'), { status: 400 });
+  }
+  if (b.size > MATERIALIZE_LIMIT || job.materialized) return;
+
+  let buf;
+  try {
+    buf = await b.arrayBuffer();
+  } catch {
+    throw Object.assign(
+      new Error('사진을 읽지 못했습니다. iCloud 사진이 아직 내려받아지지 않았을 수 있습니다. '
+        + '사진 앱에서 한 번 열어본 뒤 다시 시도해 주세요.'),
+      { status: 400 },
+    );
+  }
+  if (buf.byteLength !== b.size) {
+    throw Object.assign(
+      new Error(`사진을 끝까지 읽지 못했습니다 (${buf.byteLength}/${b.size}바이트). 다시 선택해 주세요.`),
+      { status: 400 },
+    );
+  }
+  job.body = new File([buf], job.filename || 'photo.jpg', { type: b.type || 'application/octet-stream' });
+  job.materialized = true;
 }
 
 function toFormData(job) {
@@ -152,13 +203,17 @@ export async function runQueue({ silent = false } = {}) {
     pendingCount = jobs.length;
     if (!jobs.length) { emit({ pending: 0, running: false }); return; }
 
-    for (const job of jobs) {
+    for (const stored of jobs) {
+      // 메모리에 원본이 있으면 그것을 쓴다 (위 live 주석 참고)
+      const job = live.get(stored.uid) || stored;
       emit({ pending: pendingCount, running: true, current: job.label, progress: 0 });
       try {
+        await materialize(job);
         const res = await api.form('/api/uploads', toFormData(job), {
           onProgress: (p) => emit({ pending: pendingCount, running: true, current: job.label, progress: p }),
         });
         await qDel(job.uid);
+        live.delete(job.uid);
         pendingCount -= 1;
         if (!silent) announce(res, job);
         document.dispatchEvent(new CustomEvent('bd:uploaded', { detail: { res, job } }));
@@ -181,8 +236,9 @@ export async function runQueue({ silent = false } = {}) {
           }
           return;
         }
-        // 서버가 거절(잘못된 요청) → 큐에서 제거
+        // 서버가 거절(잘못된 요청)하거나 파일을 읽을 수 없음 → 큐에서 제거
         await qDel(job.uid);
+        live.delete(job.uid);
         pendingCount -= 1;
         toast(`⚠ ${err.message}`, 'err', 4200);
       }
@@ -209,6 +265,7 @@ function announce(res, job) {
 /** 업로드 등록 — 즉시 시도하고, 실패하면 대기열에 남깁니다 */
 export async function enqueue({ body, thumb, filename, fields, label }) {
   const job = { uid: uuid(), body, thumb, filename, fields, label, tries: 0, at: Date.now() };
+  live.set(job.uid, job);
   await qPut(job);
   pendingCount = (await qAll()).length;
   runQueue();

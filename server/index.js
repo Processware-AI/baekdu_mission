@@ -106,7 +106,26 @@ app.use((err, req, res, _next) => {
     return res.status(413).json({ error: '파일이 너무 큽니다. 영상은 짧게 잘라서 올려주세요.' });
   }
   if (isTruncatedUpload(err)) {
-    console.warn(`  ⚠ 업로드가 중간에 끊겼습니다 (${req.user?.name || '로그인 전'}) — 앱이 자동으로 다시 시도합니다.`);
+    // 어디까지 오다 끊겼는지 남긴다. 거의 다 와서 끊기는지, 시작하자마자
+    // 끊기는지에 따라 원인이 다르다. (bytesRead 는 같은 연결로 앞서 오간
+    // 요청까지 포함할 수 있어 정확한 값이 아니라 어림값이다.)
+    const mb = (n) => `${(n / 1048576).toFixed(1)}MB`;
+    const want = Number(req.headers['content-length'] || 0);
+    const got = req.socket?.bytesRead ?? 0;
+    const when = new Date().toLocaleTimeString('ko-KR');
+    const ua = String(req.headers['user-agent'] || '');
+    const device = /iPhone|iPad/.test(ua) ? '아이폰/아이패드'
+      : /Android/.test(ua) ? '안드로이드'
+        : /Macintosh/.test(ua) ? '맥' : '기타';
+    console.warn(`  ⚠ [${when}] 업로드가 중간에 끊겼습니다 (${req.user?.name || '로그인 전'})`
+      + ` — 받은 양 약 ${mb(got)} / 보내려던 양 ${mb(want)}`
+      + (want && got ? ` (${Math.min(100, Math.round((got / want) * 100))}%)` : '')
+      + ' — 앱이 자동으로 다시 시도합니다.');
+    console.warn(`      기기=${device}`
+      + ` 화면파일=${req.headers['x-app-build'] || '옛 버전(표식 없음)'}`
+      + ` content-length=${req.headers['content-length'] ?? '없음'}`
+      + ` transfer-encoding=${req.headers['transfer-encoding'] ?? '없음'}`
+      + ` content-type=${String(req.headers['content-type'] || '').slice(0, 50)}`);
     if (res.headersSent) return;
     return res.status(408).json({ error: '전송이 중간에 끊겼습니다. 다시 시도해 주세요.' });
   }
