@@ -163,12 +163,22 @@ export async function runQueue({ silent = false } = {}) {
         if (!silent) announce(res, job);
         document.dispatchEvent(new CustomEvent('bd:uploaded', { detail: { res, job } }));
       } catch (err) {
-        if (err.offline || !navigator.onLine || err.status >= 500 || !err.status) {
+        // 서버가 500 을 준 것은 신호 문제가 아니다. 같은 문구로 뭉뚱그리면
+        // 참가자가 계속 와이파이만 탓하게 되므로 구분해서 알려준다.
+        // 408 은 전송이 잘려서 서버까지 다 못 간 것 — 신호 문제로 본다.
+        const serverError = err.status >= 500;
+        const truncated = err.status === 408;
+        if (err.offline || !navigator.onLine || serverError || truncated || !err.status) {
           // 나중에 다시 시도
           job.tries = (job.tries || 0) + 1;
           await qPut(job);
-          emit({ pending: pendingCount, running: false, offline: true });
-          if (!silent) toast('📡 연결이 불안정합니다. 대기열에 저장했어요 — 신호가 잡히면 자동으로 올라갑니다.', '', 4200);
+          emit({ pending: pendingCount, running: false, offline: !serverError, serverError });
+          if (!silent) {
+            toast(serverError
+              ? `⚠️ <b>서버에서 오류가 났습니다</b> (${err.status})<br>대기열에 저장했어요. 다시 시도해도 안 되면 운영진에게 알려주세요.`
+              : '📡 연결이 불안정합니다. 대기열에 저장했어요 — 신호가 잡히면 자동으로 올라갑니다.',
+            serverError ? 'err' : '', 4600);
+          }
           return;
         }
         // 서버가 거절(잘못된 요청) → 큐에서 제거

@@ -108,8 +108,9 @@ function wireQueueBar() {
       bar.innerHTML = `<span class="sp"></span>
         <span style="flex:1">업로드 중 ${pct}% <span class="muted">· ${st.pending}개 남음</span></span>`;
     } else {
-      bar.innerHTML = `<span>📡</span>
-        <span style="flex:1">대기 중 <b>${st.pending}개</b> — 연결되면 자동 업로드</span>
+      bar.innerHTML = `<span>${st.serverError ? '⚠️' : '📡'}</span>
+        <span style="flex:1">대기 중 <b>${st.pending}개</b> — ${
+          st.serverError ? '서버 오류로 멈췄습니다' : '연결되면 자동 업로드'}</span>
         <button class="btn sm ghost" id="qretry">지금 시도</button>`;
       bar.querySelector('#qretry').onclick = () => runQueue();
     }

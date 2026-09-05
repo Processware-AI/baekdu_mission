@@ -85,10 +85,30 @@ function sendIndex(req, res) {
 
 app.use((req, res) => res.status(404).json({ error: '없는 경로입니다.' }));
 
+/**
+ * 업로드 도중 연결이 끊기면 multipart 본문이 잘린 채 도착해서
+ * busboy 가 'Unexpected end of form' 또는 'Request aborted' 를 낸다.
+ * 서버 잘못이 아니라 참가자 쪽 신호 문제이므로,
+ *  - 스택을 쏟지 않고 한 줄만 남기고
+ *  - 408 로 돌려줘서 앱이 "연결이 불안정합니다"로 안내하고 다시 시도하게 한다.
+ * (500 으로 주면 앱이 서버 잘못이라고 알리게 된다.)
+ */
+function isTruncatedUpload(err) {
+  return err?.message === 'Unexpected end of form'
+    || err?.message === 'Request aborted'
+    || err?.code === 'ECONNRESET'
+    || err?.code === 'ECONNABORTED';
+}
+
 // eslint-disable-next-line no-unused-vars
-app.use((err, _req, res, _next) => {
+app.use((err, req, res, _next) => {
   if (err?.code === 'LIMIT_FILE_SIZE') {
     return res.status(413).json({ error: '파일이 너무 큽니다. 영상은 짧게 잘라서 올려주세요.' });
+  }
+  if (isTruncatedUpload(err)) {
+    console.warn(`  ⚠ 업로드가 중간에 끊겼습니다 (${req.user?.name || '로그인 전'}) — 앱이 자동으로 다시 시도합니다.`);
+    if (res.headersSent) return;
+    return res.status(408).json({ error: '전송이 중간에 끊겼습니다. 다시 시도해 주세요.' });
   }
   console.error('[error]', err);
   res.status(500).json({ error: '서버 오류가 발생했습니다.' });
