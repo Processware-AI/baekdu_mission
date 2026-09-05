@@ -96,13 +96,18 @@ export function sheet({ title, body, foot, onClose }) {
     sh.style.transform = 'translateY(100%)';
     bg.style.transition = 'opacity .2s';
     bg.style.opacity = '0';
-    setTimeout(() => { bg.remove(); sh.remove(); }, 200);
+    setTimeout(() => {
+      bg.remove(); sh.remove();
+      // 시트가 여러 개 겹쳐 있을 수 있으니 마지막 하나가 닫힐 때만 푼다
+      if (!document.querySelector('.sheet')) document.body.classList.remove('sheet-open');
+    }, 200);
     document.body.style.overflow = '';
     onClose?.();
   };
   bg.onclick = close;
   sh.querySelector('[data-x]').onclick = close;
   document.body.style.overflow = 'hidden';
+  document.body.classList.add('sheet-open');
   document.body.append(bg, sh);
   return { root: sh, body: bodyEl, close };
 }

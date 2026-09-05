@@ -279,6 +279,12 @@ textarea{resize:vertical; min-height:70px; line-height:1.5}
 .sheet .sh-body{padding:16px 18px; overflow-y:auto; display:grid; gap:14px; -webkit-overflow-scrolling:touch}
 .sheet .sh-foot{padding:12px 18px calc(12px + env(safe-area-inset-bottom)); border-top:1px solid var(--line); flex:none;
   background:var(--surface)}
+/* 시트가 열려 있는 동안 하단 고정 바를 감춘다.
+   iOS 웹킷은 backdrop-filter 가 걸린 요소(탭바)를 z-index 를 무시하고 위에 그리는
+   일이 있어, 화면 아래쪽에 뜨는 시트의 버튼이 가려져 눌리지 않는다.
+   어차피 시트가 열려 있으면 탭바를 쓸 일도 없다. */
+body.sheet-open .tabbar,
+body.sheet-open .qbar{visibility:hidden; pointer-events:none}
 @keyframes up{from{transform:translateY(100%)}to{transform:translateY(0)}}
 @keyframes fade{from{opacity:0}to{opacity:1}}
 
