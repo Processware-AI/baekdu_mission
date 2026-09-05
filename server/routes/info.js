@@ -5,6 +5,7 @@ import { PLACES, DAYS, MISSIONS, FREE_MISSIONS, ADMIN_MISSIONS } from '../data/p
 import { GROUPS, BUSES, DAY3_BUS_BY_GROUP } from '../data/participants.js';
 import { TRIP, CONTACTS, ALERTS, PREP, FEES, SPONSORS, SHUTTLE } from '../data/guide.js';
 import { RULES } from '../lib/scoring.js';
+import { MAX_UPLOAD_BYTES, TUNNEL_UPLOAD_LIMIT } from '../config.js';
 
 const router = express.Router();
 
@@ -30,6 +31,10 @@ router.get('/bundle', (req, res) => {
     days: DAYS,
     places: PLACES,
     missions: MISSIONS,
+    // Cloudflare 를 거쳐 들어왔으면(cf-ray 헤더) 엣지 제한이 먼저 걸린다
+    maxUploadBytes: req.headers['cf-ray']
+      ? Math.min(MAX_UPLOAD_BYTES, TUNNEL_UPLOAD_LIMIT)
+      : MAX_UPLOAD_BYTES,
     freeMissions: FREE_MISSIONS,
     adminMissions: ADMIN_MISSIONS,
     rules: RULES,

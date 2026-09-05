@@ -1,5 +1,5 @@
 import { S, missionMeta, progressOf, missionsFor, isFreePlace } from '../state.js';
-import { sheet, esc, toast, el } from '../util.js';
+import { sheet, esc, toast, el, fmtBytes } from '../util.js';
 import { prepare, enqueue } from '../upload.js';
 
 /** 업로드 시트 — 방문지 + 미션 + 파일 + 함께 찍은 사람 */
@@ -101,6 +101,8 @@ export function openUploader({ placeSlug = null, mission = null } = {}) {
           </label>
         </div>
         <div id="u-preview"></div>
+        ${m.video ? `<span class="hint">영상은 <b>1분 이내</b>를 권합니다.
+          ${fmtBytes(S.bundle.maxUploadBytes || 95 * 1024 * 1024)}까지 올릴 수 있어요.</span>` : ''}
       </div>
 
       ${n ? `
@@ -156,6 +158,16 @@ export function openUploader({ placeSlug = null, mission = null } = {}) {
     const onPick = async (e) => {
       const f = e.target.files?.[0];
       if (!f) return;
+      // 한참 올리다 실패하는 것보다 고르는 순간에 알려주는 편이 낫다.
+      // (터널을 거치면 100MB 언저리에서 Cloudflare 가 잘라버린다)
+      const limit = S.bundle.maxUploadBytes || 95 * 1024 * 1024;
+      if (f.size > limit) {
+        e.target.value = '';
+        toast(`⚠ <b>파일이 너무 큽니다</b> (${fmtBytes(f.size)})<br>`
+          + `${fmtBytes(limit)} 까지 올릴 수 있습니다. 영상은 <b>1분 이내</b>로 잘라서 올려주세요.`,
+        'err', 6000);
+        return;
+      }
       sel.file = f;
       const pv = body.querySelector('#u-preview');
       pv.innerHTML = `<div class="hint" style="margin-top:8px">⏳ 준비 중…</div>`;

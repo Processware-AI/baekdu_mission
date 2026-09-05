@@ -1,7 +1,7 @@
 const jsonHeaders = { 'Content-Type': 'application/json' };
 
 /** 휴대폰이 새 화면 파일을 받았는지 서버 로그로 확인하기 위한 표식 */
-export const APP_BUILD = '2026-09-05d';
+export const APP_BUILD = '2026-09-05e';
 
 async function handle(res) {
   const ct = res.headers.get('content-type') || '';
@@ -43,7 +43,12 @@ export const api = {
       };
       xhr.onload = () => {
         let data;
-        try { data = JSON.parse(xhr.responseText); } catch { data = { error: '응답을 해석할 수 없습니다.' }; }
+        try { data = JSON.parse(xhr.responseText); } catch {
+          // 413 은 Cloudflare 가 HTML 로 돌려주므로 파싱이 안 된다
+          data = { error: xhr.status === 413
+            ? '파일이 너무 큽니다. 영상은 1분 이내로 잘라서 올려주세요.'
+            : '응답을 해석할 수 없습니다.' };
+        }
         if (xhr.status >= 200 && xhr.status < 300) resolve(data);
         else {
           const err = new Error(data?.error || `업로드 실패 (${xhr.status})`);
