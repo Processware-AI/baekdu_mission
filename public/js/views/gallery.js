@@ -156,7 +156,13 @@ export function lightbox(idx, host) {
       if (delBtn.disabled) return;
       delBtn.disabled = true;
       try {
-        if (!await confirmSheet('삭제할까요?', '이 사진/영상을 완전히 삭제합니다. 되돌릴 수 없습니다.', '삭제')) return;
+        if (!await confirmSheet(
+          '삭제할까요?',
+          '이 사진으로 받은 점수와 태그된 분들의 출연 점수, 선착순·정복 보너스까지 함께 사라집니다. '
+          + '더 잘 나온 것으로 바꾸고 싶은 거라면 지우지 말고 같은 미션에 새로 올리세요 — '
+          + '그러면 자료만 교체되고 보너스는 유지됩니다.',
+          '삭제',
+        )) return;
         await api.del(`/api/uploads/${it.id}`);
         toast('삭제했습니다.', 'ok');
         close();
