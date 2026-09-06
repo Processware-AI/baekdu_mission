@@ -72,7 +72,9 @@ async function main() {
 
   const srv = spawn(process.execPath, [path.join(ROOT, 'server/index.js')], {
     cwd: ROOT,
-    env: { ...process.env, PORT: String(PORT), HOST: '127.0.0.1', DATA_DIR: 'data-test', ADMIN_PASSWORD: 'testpw123' },
+    env: { ...process.env, PORT: String(PORT), HOST: '127.0.0.1', DATA_DIR: 'data-test',
+      // .env 에 실제 값이 있으면 그것이 쓰이므로, 검사용 값을 명시해 고정한다
+      ADMIN_PASSWORD: 'testpw123', GUIDE_PASSWORD: 'gpw123' },
     stdio: ['ignore', 'pipe', 'pipe'],
   });
   let srvLog = '';
@@ -301,7 +303,7 @@ async function main() {
     ok(!fs.existsSync(path.join(expected, files[0] || 'x')), '삭제 시 실제 파일도 제거');
 
     console.log('\n▶ 가이드 계정');
-    const gLogin = await req('POST', '/api/auth/login', { json: { name: 'guide01', password: 'icca-guide-2026' } });
+    const gLogin = await req('POST', '/api/auth/login', { json: { name: 'guide01', password: 'gpw123' } });
     ok(gLogin.status === 200 && gLogin.data.user.isGuide === true && gLogin.data.user.isAdmin === false,
       '가이드 로그인 (isGuide=true, isAdmin=false)');
 
