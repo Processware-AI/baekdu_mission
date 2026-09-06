@@ -1,5 +1,5 @@
 import { api } from '../api.js';
-import { S, missionMeta } from '../state.js';
+import { S, missionMeta, refreshProgress } from '../state.js';
 import { esc, el, relTime, fmtBytes, toast, confirmSheet } from '../util.js';
 import { openUploader } from './uploader.js';
 
@@ -164,6 +164,9 @@ export function lightbox(idx, host) {
           '삭제',
         )) return;
         await api.del(`/api/uploads/${it.id}`);
+        // 점수·정복·업로드 건수는 다른 화면(내 정보·일정·미션·홈)에서도 쓰인다.
+        // 여기서 다시 불러오지 않으면 지운 자료가 그 화면들에 계속 남아 보인다.
+        await refreshProgress().catch(() => {});
         toast('삭제했습니다.', 'ok');
         close();
         renderGallery(host);
