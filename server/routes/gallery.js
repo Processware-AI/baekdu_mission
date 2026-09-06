@@ -5,6 +5,7 @@ import db from '../db.js';
 import { UPLOAD_DIR, THUMB_DIR } from '../config.js';
 import { requireAuth } from '../middleware/auth.js';
 import { PLACES, CONQUER_KEYS, MEMBER_MISSION_KEYS } from '../data/places.js';
+import { makeVideoThumb } from '../lib/thumb.js';
 import { leaderboard, groupBoard, badgesFor, userScore } from '../lib/scoring.js';
 
 const router = express.Router();
@@ -177,8 +178,12 @@ router.get('/media/:id', (req, res) => {
   sendFile(req, res, abs, row.mime);
 });
 
-router.get('/thumb/:id', (req, res) => {
-  const row = db.prepare('SELECT thumb_path, file_path, mime, media_type FROM uploads WHERE id = ?').get(Number(req.params.id));
+/** 같은 영상에 대해 동시에 여러 번 만들지 않도록 */
+const makingThumb = new Map();
+
+router.get('/thumb/:id', async (req, res) => {
+  const id = Number(req.params.id);
+  const row = db.prepare('SELECT id, thumb_path, file_path, mime, media_type FROM uploads WHERE id = ?').get(id);
   if (!row) return res.status(404).end();
   if (row.thumb_path) {
     const abs = path.join(THUMB_DIR, row.thumb_path);
@@ -186,6 +191,17 @@ router.get('/thumb/:id', (req, res) => {
   }
   if (row.media_type === 'photo') {
     return sendFile(req, res, path.join(UPLOAD_DIR, row.file_path), row.mime);
+  }
+
+  // 썸네일 없는 영상 — 예전에 올라왔거나 만들기에 실패한 것. 여기서 한 번 만들어 둔다.
+  if (!makingThumb.has(id)) {
+    makingThumb.set(id, makeVideoThumb(path.join(UPLOAD_DIR, row.file_path))
+      .finally(() => setTimeout(() => makingThumb.delete(id), 1000)));
+  }
+  const made = await makingThumb.get(id);
+  if (made) {
+    db.prepare('UPDATE uploads SET thumb_path = ? WHERE id = ?').run(made, id);
+    return sendFile(req, res, path.join(THUMB_DIR, made), 'image/jpeg');
   }
   // 썸네일을 못 만든 영상(아이폰에서 종종 실패한다). 404 를 주면 갤러리에
   // 깨진 이미지 물음표가 뜨므로, 영상임을 알 수 있는 그림을 대신 보낸다.

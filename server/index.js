@@ -7,6 +7,7 @@ import { PORT, HOST, SESSION_SECRET, PUBLIC_DIR, ADMIN_ID } from './config.js';
 import { SqliteStore } from './lib/session-store.js';
 import { loadUser } from './middleware/auth.js';
 import { seed } from './seed.js';
+import { hasFfmpeg } from './lib/thumb.js';
 
 import authRoutes from './routes/auth.js';
 import infoRoutes from './routes/info.js';
@@ -174,6 +175,11 @@ server.on('listening', () => {
   console.log('  🏔️  ICCA 산악회 백두산 여행 앱');
   console.log('  ─────────────────────────────────────────');
   console.log(`  방문지 ${summary.places}곳 · 참가자 ${summary.created + summary.updated}명 · 관리자 ID: ${ADMIN_ID}`);
+  hasFfmpeg().then((ok) => {
+    if (!ok) {
+      console.log('  ⚠ ffmpeg 가 없어 영상 썸네일을 만들 수 없습니다 (brew install ffmpeg)');
+    }
+  });
   console.log('');
   console.log(`  이 PC        : http://localhost:${PORT}`);
   for (const ip of localIPs()) {

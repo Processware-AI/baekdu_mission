@@ -97,6 +97,9 @@ async function looksBlank(blob) {
  */
 async function prepareVideo(file) {
   const url = URL.createObjectURL(file);
+  // 썸네일을 못 만들더라도 알아낸 정보는 버리지 않는다.
+  // (아이폰 .mov 는 그리기에서 막히는데, 그때 해상도·길이까지 같이 잃고 있었다)
+  const info = { body: file, thumb: null, width: null, height: null, duration: null };
   try {
     const v = document.createElement('video');
     v.preload = 'auto';
@@ -108,6 +111,9 @@ async function prepareVideo(file) {
     v.src = url;
 
     await once(v, 'loadeddata', 12000);
+    info.width = v.videoWidth || null;
+    info.height = v.videoHeight || null;
+    info.duration = Number.isFinite(v.duration) ? v.duration : null;
 
     // 아이폰에서 프레임이 디코드되게 하는 핵심. 자동재생이 막히면 그냥 넘어간다.
     try { await v.play(); } catch { /* 재생 못 해도 아래에서 그려본다 */ }
@@ -129,9 +135,10 @@ async function prepareVideo(file) {
       const retry = await drawToBlob(v, tw, th, 0.72);
       if (retry && !(await looksBlank(retry))) thumb = retry;
     }
-    return { body: file, thumb, width: v.videoWidth, height: v.videoHeight, duration: v.duration };
+    info.thumb = thumb || null;
+    return info;
   } catch {
-    return { body: file, thumb: null };
+    return info;
   } finally {
     URL.revokeObjectURL(url);
   }
