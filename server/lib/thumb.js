@@ -26,22 +26,30 @@ export async function hasFfmpeg() {
 }
 
 /**
- * 영상에서 썸네일 한 장을 만들어 THUMB_DIR 에 저장한다.
+ * 사진·영상에서 썸네일 한 장을 만들어 THUMB_DIR 에 저장한다.
+ *
+ * 사진도 서버에서 만드는 이유: 휴대폰이 썸네일을 못 보내면 갤러리 격자에
+ * 원본을 그대로 내보내게 된다. 4MB 짜리가 수십 장이면 현지 회선에서 감당이 안 된다.
+ *
+ * @param {string} absPath 원본 파일 경로
+ * @param {boolean} isVideo 영상이면 true
  * @returns {Promise<string|null>} THUMB_DIR 기준 파일명, 실패하면 null
  */
-export async function makeVideoThumb(absVideoPath) {
+export async function makeThumb(absPath, isVideo) {
   if (!await hasFfmpeg()) return null;
-  if (!fs.existsSync(absVideoPath)) return null;
+  if (!fs.existsSync(absPath)) return null;
 
   const name = `${crypto.randomBytes(6).toString('hex')}_ff.jpg`;
   const out = path.join(THUMB_DIR, name);
 
-  // -ss 를 -i 앞에 두면 빠르게 건너뛴다. 0.6초 지점이 없으면(짧은 영상)
-  // 맨 앞 프레임으로 다시 시도한다.
-  for (const at of ['0.6', '0']) {
+  // 영상은 -ss 를 -i 앞에 두어 빠르게 건너뛴다. 0.6초 지점이 없으면(짧은 영상)
+  // 맨 앞 프레임으로 다시 시도한다. 사진은 건너뛸 것이 없다.
+  const seeks = isVideo ? ['0.6', '0'] : [null];
+  for (const at of seeks) {
     const ok = await run('ffmpeg', [
       '-nostdin', '-loglevel', 'error',
-      '-ss', at, '-i', absVideoPath,
+      ...(at === null ? [] : ['-ss', at]),
+      '-i', absPath,
       '-frames:v', '1',
       '-vf', "scale='min(480,iw)':-2",
       '-q:v', '4', '-y', out,
