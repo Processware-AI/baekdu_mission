@@ -42,6 +42,7 @@ function publicUser(u) {
     roles: JSON.parse(u.roles || '[]'),
     singleRoom: !!u.single_room,
     isAdmin: !!u.is_admin,
+    isGuide: !!u.is_guide,
     pwChanged: !!u.pw_changed,
   };
 }

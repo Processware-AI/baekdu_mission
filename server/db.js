@@ -111,5 +111,8 @@ function addColumn(table, column, decl) {
   if (!has) db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${decl}`);
 }
 addColumn('uploads', 'updated_at', 'TEXT');   // 미션 슬롯을 교체한 시각
+// 가이드 계정: 방문지별 단체사진·브이로그만 올린다.
+// 참가자가 아니므로 랭킹·태그 명단·미참여자 집계에서 빠져야 한다.
+addColumn('users', 'is_guide', 'INTEGER NOT NULL DEFAULT 0');
 
 export default db;

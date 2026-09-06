@@ -54,11 +54,14 @@ export const missionMeta = (key) =>
  * '자유 / 기타'는 인원수로 나누는 대신 주제(이동 중·먹거리·하늘…)를 고르게 한다.
  */
 export function missionsFor(slug, { withAdmin = false } = {}) {
+  const admin = S.bundle?.adminMissions || [];
+  // 가이드는 참가자 미션을 올리지 않는다. 방문지별 단체사진·브이로그 담당.
+  if (S.user?.isGuide) return withAdmin ? admin : [];
   const place = S.placeBySlug?.get(slug);
   const base = place?.missionSet === 'free'
     ? (S.bundle?.freeMissions || [])
     : (S.bundle?.missions || []);
-  return withAdmin && S.user?.isAdmin ? [...base, ...(S.bundle?.adminMissions || [])] : base;
+  return withAdmin && S.user?.isAdmin ? [...base, ...admin] : base;
 }
 
 /** 이 방문지가 주제형(자유/기타)인가 */

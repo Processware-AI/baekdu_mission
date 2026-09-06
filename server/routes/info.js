@@ -55,7 +55,7 @@ router.get('/bundle', (req, res) => {
 router.get('/participants', (_req, res) => {
   const rows = db.prepare(
     `SELECT id, name, gi, bus, grp, roles FROM users
-     WHERE is_admin = 0 ORDER BY grp, sort_no`
+     WHERE is_admin = 0 AND is_guide = 0 ORDER BY grp, sort_no`
   ).all();
   res.json(rows.map((r) => ({
     id: r.id, name: r.name, gi: r.gi, bus: r.bus, group: r.grp,

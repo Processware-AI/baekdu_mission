@@ -26,6 +26,7 @@ export default async function renderMe(host) {
             ${u.bus ? `<span class="chip">${u.bus}호차</span>` : ''}
             ${u.singleRoom ? '<span class="chip gold">1인실</span>' : ''}
             ${u.isAdmin ? '<span class="chip teal">운영진</span>' : ''}
+            ${u.isGuide ? '<span class="chip accent">가이드</span>' : ''}
             ${(u.roles || []).map((r) => `<span class="chip teal">${esc(r)}</span>`).join('')}
           </div>
         </div>
@@ -91,7 +92,7 @@ export default async function renderMe(host) {
 
     <section class="card">
       <h2>🔐 계정</h2>
-      ${!u.pwChanged && !u.isAdmin ? `
+      ${!u.pwChanged && !u.isAdmin && !u.isGuide ? `
         <div class="alert warn" style="margin-bottom:10px"><div class="ic">🔑</div><div>
           <b>비밀번호가 아직 휴대폰 번호입니다</b>
           <p>다른 사람이 내 이름으로 올릴 수 있습니다. 꼭 바꿔주세요.</p></div></div>` : ''}

@@ -227,7 +227,7 @@ async function start() {
   });
   await route();
 
-  if (!S.user.pwChanged && !S.user.isAdmin) {
+  if (!S.user.pwChanged && !S.user.isAdmin && !S.user.isGuide) {
     setTimeout(() => toast(
       '🔐 비밀번호가 아직 휴대폰 번호입니다. <b>내 정보</b>에서 바꿔주세요.', '', 5200), 1200);
   }

@@ -77,10 +77,16 @@ router.post('/', requireAuth, logUpload, upload.fields([{ name: 'file', maxCount
     if (!place) { cleanup(); return res.status(400).json({ error: '방문지를 선택해 주세요.' }); }
     if (!ALL_MISSION_KEYS.includes(mission)) { cleanup(); return res.status(400).json({ error: '미션 종류가 올바르지 않습니다.' }); }
 
+    // 단체사진·브이로그는 운영진과 가이드만. 점수 경쟁에서는 빠진다.
     const isAdminMission = !MEMBER_MISSION_KEYS.includes(mission);
-    if (isAdminMission && !req.user.isAdmin) {
+    if (isAdminMission && !req.user.isAdmin && !req.user.isGuide) {
       cleanup();
-      return res.status(403).json({ error: '단체사진·브이로그는 운영진만 올릴 수 있습니다.' });
+      return res.status(403).json({ error: '단체사진·브이로그는 운영진과 가이드만 올릴 수 있습니다.' });
+    }
+    // 가이드는 참가자 미션(점수)을 올리지 않는다
+    if (!isAdminMission && req.user.isGuide) {
+      cleanup();
+      return res.status(403).json({ error: '가이드 계정은 단체사진과 브이로그만 올릴 수 있습니다.' });
     }
 
     const mime = file.mimetype || '';
@@ -107,7 +113,7 @@ router.post('/', requireAuth, logUpload, upload.fields([{ name: 'file', maxCount
     tags = [...new Set(tags.map(Number).filter((n) => Number.isInteger(n) && n > 0))];
     if (tags.length) {
       const placeholders = tags.map(() => '?').join(',');
-      const valid = db.prepare(`SELECT id FROM users WHERE id IN (${placeholders}) AND is_admin = 0`).all(...tags);
+      const valid = db.prepare(`SELECT id FROM users WHERE id IN (${placeholders}) AND is_admin = 0 AND is_guide = 0`).all(...tags);
       tags = valid.map((v) => v.id);
     }
     tags = tags.filter((t) => t !== req.user.id);

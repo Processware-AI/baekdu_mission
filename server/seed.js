@@ -4,7 +4,7 @@ import bcrypt from 'bcryptjs';
 import db from './db.js';
 import { PARTICIPANTS } from './data/participants.js';
 import { PLACES, placeFolder } from './data/places.js';
-import { ADMIN_ID, ADMIN_PASSWORD } from './config.js';
+import { ADMIN_ID, ADMIN_PASSWORD, GUIDE_IDS, GUIDE_PASSWORD } from './config.js';
 
 export const digits = (s) => String(s || '').replace(/\D/g, '');
 
@@ -31,7 +31,7 @@ const updateUserMeta = db.prepare(`
 `);
 
 export function seed({ resetPasswords = false } = {}) {
-  const summary = { places: 0, created: 0, updated: 0, admin: null, renamed: [] };
+  const summary = { places: 0, created: 0, updated: 0, admin: null, guides: 0, renamed: [] };
 
   const run = db.transaction(() => {
     for (const p of PLACES) {
@@ -90,6 +90,28 @@ export function seed({ resetPasswords = false } = {}) {
       db.prepare('UPDATE users SET is_admin = 1 WHERE id = ?').run(admin.id);
       summary.admin = 'kept';
     }
+
+    // 가이드 계정 (guide01~04). 관리자 계정과 같은 방식으로,
+    // 이미 있으면 비밀번호를 건드리지 않는다 — 각자 바꿔 쓸 수 있어야 한다.
+    for (const [i, gid] of GUIDE_IDS.entries()) {
+      const g = findUser.get(gid);
+      if (!g) {
+        insertUser.run({
+          name: gid, alias: null, phone: null,
+          hash: bcrypt.hashSync(GUIDE_PASSWORD, 10),
+          gi: '가이드', bus: null, grp: 0, roles: JSON.stringify(['가이드']),
+          single: 0, admin: 0, sort: 900 + i,
+        });
+        db.prepare('UPDATE users SET is_guide = 1 WHERE name = ?').run(gid);
+        summary.guides += 1;
+      } else {
+        db.prepare('UPDATE users SET is_guide = 1, is_admin = 0 WHERE id = ?').run(g.id);
+        if (resetPasswords) {
+          db.prepare('UPDATE users SET password_hash = ?, pw_changed = 0 WHERE id = ?')
+            .run(bcrypt.hashSync(GUIDE_PASSWORD, 10), g.id);
+        }
+      }
+    }
   });
 
   run();
@@ -106,6 +128,6 @@ if (isMain) {
   console.log(`   방문지 ${s.places}곳`);
   console.log(`   참가자 신규 ${s.created}명 / 갱신 ${s.updated}명`);
   for (const r of s.renamed) console.log(`   이름 변경: ${r}`);
-  console.log(`   관리자(${ADMIN_ID}) ${s.admin}`);
+  console.log(`   관리자(${ADMIN_ID}) ${s.admin} · 가이드 ${GUIDE_IDS.length}개`);
   if (reset) console.log(`   ⚠ 모든 비밀번호를 초기값(휴대폰 번호)으로 되돌렸습니다.`);
 }

@@ -300,7 +300,37 @@ async function main() {
     ok(delMine.status === 200, '본인 자료는 삭제 가능');
     ok(!fs.existsSync(path.join(expected, files[0] || 'x')), '삭제 시 실제 파일도 제거');
 
+    console.log('\n▶ 가이드 계정');
+    const gLogin = await req('POST', '/api/auth/login', { json: { name: 'guide01', password: 'icca-guide-2026' } });
+    ok(gLogin.status === 200 && gLogin.data.user.isGuide === true && gLogin.data.user.isAdmin === false,
+      '가이드 로그인 (isGuide=true, isAdmin=false)');
+
+    const gGroup = await req('POST', '/api/uploads', {
+      form: fd({ file: JPEG, name: 'g.jpg', type: 'image/jpeg',
+        fields: { placeSlug: 'bukpa-cheonji', mission: 'group', tags: [], clientUid: 'gg1' } }),
+    });
+    ok(gGroup.status === 200, '가이드가 단체사진 업로드 가능');
+    ok(gGroup.data.points === 0, '가이드 업로드는 점수 없음');
+
+    const gSolo = await req('POST', '/api/uploads', {
+      form: fd({ file: JPEG, name: 'g2.jpg', type: 'image/jpeg',
+        fields: { placeSlug: 'bukpa-cheonji', mission: 'solo', tags: [], clientUid: 'gg2' } }),
+    });
+    ok(gSolo.status === 403, '가이드는 참가자 미션 업로드 불가');
+    ok((await req('GET', '/api/admin/stats')).status === 403, '가이드는 운영진 API 차단');
+
+    const gParts = await req('GET', '/api/participants');
+    ok(!gParts.data.some((p) => p.name.startsWith('guide')), '태그 명단에 가이드 없음');
+    const gRank = await req('GET', '/api/rank');
+    ok(!gRank.data.overall.some((r) => r.name.startsWith('guide')), '랭킹에 가이드 없음');
+
+    await req('POST', '/api/auth/login', { json: { name: 'admin', password: 'testpw123' } });
+    const st2 = await req('GET', '/api/admin/stats');
+    ok(st2.data.totals.members === 75, `참가자 집계에 가이드 미포함 (${st2.data.totals.members}명)`);
+
     console.log('\n▶ 사진·영상 초기화');
+    // 앞 단계에서 어떤 계정으로 끝났든 상관없도록 참가자로 명시해 로그인한다
+    await req('POST', '/api/auth/login', { json: { name: '박화서', password: '01087503934' } });
     const resetAsMember = await req('POST', '/api/admin/reset-uploads', { json: { confirm: '전체삭제' } });
     ok(resetAsMember.status === 403, '참가자는 초기화 불가');
 

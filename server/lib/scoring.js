@@ -131,7 +131,7 @@ export function leaderboard({ groupId = null, limit = 100 } = {}) {
     FROM users u
     LEFT JOIN (SELECT user_id, SUM(points) pts FROM score_events GROUP BY user_id) s ON s.user_id = u.id
     LEFT JOIN (SELECT user_id, COUNT(*) cnt, COUNT(DISTINCT place_slug) places FROM uploads GROUP BY user_id) c ON c.user_id = u.id
-    WHERE u.is_admin = 0 ${groupId ? 'AND u.grp = ?' : ''}
+    WHERE u.is_admin = 0 AND u.is_guide = 0 ${groupId ? 'AND u.grp = ?' : ''}
     ORDER BY score DESC, uploads DESC, u.name ASC
     LIMIT ?
   `);
@@ -153,7 +153,7 @@ export function groupBoard() {
     FROM users u
     LEFT JOIN (SELECT user_id, SUM(points) pts FROM score_events GROUP BY user_id) s ON s.user_id = u.id
     LEFT JOIN (SELECT user_id, COUNT(*) cnt FROM uploads GROUP BY user_id) c ON c.user_id = u.id
-    WHERE u.is_admin = 0 AND u.grp > 0
+    WHERE u.is_admin = 0 AND u.is_guide = 0 AND u.grp > 0
     GROUP BY u.grp
     ORDER BY score DESC
   `).all().map((r) => ({

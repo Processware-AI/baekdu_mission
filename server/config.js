@@ -32,6 +32,15 @@ export const ADMIN_ID = process.env.ADMIN_ID || 'admin';
 export const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'baekdu2026!';
 
 /** 업로드 용량 제한 (바이트) */
+/**
+ * 가이드 계정 — 인솔자·현지 가이드용.
+ * 참가자처럼 점수를 겨루지 않고, 방문지별 단체사진과 브이로그만 올린다.
+ * 초기 비밀번호는 넷이 같고, 각자 앱에서 바꿀 수 있다.
+ */
+export const GUIDE_IDS = (process.env.GUIDE_IDS || 'guide01,guide02,guide03,guide04')
+  .split(',').map((s) => s.trim()).filter(Boolean);
+export const GUIDE_PASSWORD = process.env.GUIDE_PASSWORD || 'icca-guide-2026';
+
 /** 업로드 최대 용량 (같은 와이파이로 직접 올릴 때 기준) */
 export const MAX_UPLOAD_BYTES = Number(process.env.MAX_UPLOAD_BYTES || 400 * 1024 * 1024);
 

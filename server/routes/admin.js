@@ -20,7 +20,7 @@ router.get('/stats', (_req, res) => {
       (SELECT COUNT(*) FROM uploads WHERE media_type='video') AS videos,
       (SELECT COALESCE(SUM(bytes),0) FROM uploads) AS bytes,
       (SELECT COUNT(DISTINCT user_id) FROM uploads) AS activeUsers,
-      (SELECT COUNT(*) FROM users WHERE is_admin=0) AS members
+      (SELECT COUNT(*) FROM users WHERE is_admin=0 AND is_guide=0) AS members
   `).get();
 
   const byPlace = db.prepare(`
@@ -38,7 +38,7 @@ router.get('/stats', (_req, res) => {
 
   const silent = db.prepare(`
     SELECT u.id, u.name, u.gi, u.grp FROM users u
-    WHERE u.is_admin = 0 AND NOT EXISTS (SELECT 1 FROM uploads up WHERE up.user_id = u.id)
+    WHERE u.is_admin = 0 AND u.is_guide = 0 AND NOT EXISTS (SELECT 1 FROM uploads up WHERE up.user_id = u.id)
     ORDER BY u.grp, u.sort_no
   `).all();
 
@@ -91,14 +91,14 @@ router.get('/participants', (_req, res) => {
     FROM users u
     LEFT JOIN (SELECT user_id, COUNT(*) cnt FROM uploads GROUP BY user_id) c ON c.user_id=u.id
     LEFT JOIN (SELECT user_id, SUM(points) pts FROM score_events GROUP BY user_id) s ON s.user_id=u.id
-    WHERE u.is_admin = 0 ORDER BY u.sort_no
+    WHERE u.is_admin = 0 AND u.is_guide = 0 ORDER BY u.sort_no
   `).all();
   res.json(rows.map((r) => ({ ...r, roles: JSON.parse(r.roles || '[]') })));
 });
 
 /** 비밀번호를 휴대폰 번호로 초기화 */
 router.post('/participants/:id/reset-password', (req, res) => {
-  const u = db.prepare('SELECT id, phone FROM users WHERE id = ? AND is_admin = 0').get(Number(req.params.id));
+  const u = db.prepare('SELECT id, phone FROM users WHERE id = ? AND is_admin = 0 AND is_guide = 0').get(Number(req.params.id));
   if (!u) return res.status(404).json({ error: '참가자를 찾을 수 없습니다.' });
   if (!u.phone) return res.status(400).json({ error: '등록된 연락처가 없습니다.' });
   db.prepare('UPDATE users SET password_hash = ?, pw_changed = 0 WHERE id = ?')
@@ -110,7 +110,7 @@ router.post('/participants/:id/reset-password', (req, res) => {
 router.post('/participants/:id/phone', (req, res) => {
   const phone = String(req.body?.phone || '').trim();
   if (digits(phone).length < 9) return res.status(400).json({ error: '올바른 휴대폰 번호를 입력해 주세요.' });
-  const u = db.prepare('SELECT id FROM users WHERE id = ? AND is_admin = 0').get(Number(req.params.id));
+  const u = db.prepare('SELECT id FROM users WHERE id = ? AND is_admin = 0 AND is_guide = 0').get(Number(req.params.id));
   if (!u) return res.status(404).json({ error: '참가자를 찾을 수 없습니다.' });
   db.prepare('UPDATE users SET phone = ?, password_hash = ?, pw_changed = 0 WHERE id = ?')
     .run(phone, bcrypt.hashSync(digits(phone), 10), u.id);

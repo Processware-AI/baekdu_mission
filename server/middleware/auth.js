@@ -1,7 +1,7 @@
 import db from '../db.js';
 
 const qUser = db.prepare(
-  `SELECT id, name, gi, bus, grp, roles, single_room, is_admin, pw_changed
+  `SELECT id, name, gi, bus, grp, roles, single_room, is_admin, is_guide, pw_changed
    FROM users WHERE id = ?`
 );
 
@@ -20,6 +20,7 @@ export function loadUser(req, _res, next) {
         roles: JSON.parse(u.roles || '[]'),
         singleRoom: !!u.single_room,
         isAdmin: !!u.is_admin,
+        isGuide: !!u.is_guide,
         pwChanged: !!u.pw_changed,
       };
     }
