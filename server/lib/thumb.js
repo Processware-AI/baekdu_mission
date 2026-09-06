@@ -17,12 +17,33 @@ const run = (cmd, args, ms) => new Promise((resolve) => {
   execFile(cmd, args, { timeout: ms, killSignal: 'SIGKILL' }, (err) => resolve(!err));
 });
 
-let ffmpegOk = null;
+/**
+ * ffmpeg 실행 파일 찾기.
+ *
+ * launchd 로 띄우면 PATH 를 거의 물려받지 않아 이름만으로는 찾지 못한다.
+ * (터미널에서 직접 실행할 때만 되고 데몬에서는 조용히 실패한다)
+ * 그래서 흔한 설치 위치를 직접 훑는다. 다른 곳에 있으면 .env 에
+ * FFMPEG_PATH 로 지정하면 된다.
+ */
+const CANDIDATES = [
+  process.env.FFMPEG_PATH,
+  '/opt/homebrew/bin/ffmpeg',   // 애플 실리콘 Homebrew
+  '/usr/local/bin/ffmpeg',      // 인텔 Homebrew
+  '/opt/local/bin/ffmpeg',      // MacPorts
+  'ffmpeg',                     // PATH 에 있으면
+].filter(Boolean);
 
-/** ffmpeg 를 쓸 수 있는지 (한 번만 확인하고 기억한다) */
+let ffmpegBin = null;
+
+/** ffmpeg 를 쓸 수 있는지 (한 번만 찾고 기억한다) */
 export async function hasFfmpeg() {
-  if (ffmpegOk === null) ffmpegOk = await run('ffmpeg', ['-version'], 5000);
-  return ffmpegOk;
+  if (ffmpegBin !== null) return ffmpegBin !== false;
+  for (const bin of CANDIDATES) {
+    if (bin.includes('/') && !fs.existsSync(bin)) continue;
+    if (await run(bin, ['-version'], 5000)) { ffmpegBin = bin; return true; }
+  }
+  ffmpegBin = false;
+  return false;
 }
 
 /**
@@ -46,7 +67,7 @@ export async function makeThumb(absPath, isVideo) {
   // 맨 앞 프레임으로 다시 시도한다. 사진은 건너뛸 것이 없다.
   const seeks = isVideo ? ['0.6', '0'] : [null];
   for (const at of seeks) {
-    const ok = await run('ffmpeg', [
+    const ok = await run(ffmpegBin, [
       '-nostdin', '-loglevel', 'error',
       ...(at === null ? [] : ['-ss', at]),
       '-i', absPath,
