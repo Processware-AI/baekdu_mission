@@ -98,7 +98,23 @@ export default async function renderHelp(host) {
     </section>
 
     <section class="card">
-      <h2>👨‍💻 만든 사람</h2>
+      <h2>👨‍💻 만든 이야기</h2>
+      <p class="small" style="margin:0 0 10px">
+        여행 사진은 늘 단톡방에 흩어집니다. 그때는 다들 열심히 올리는데,
+        며칠만 지나면 어디에 뭐가 있는지 찾을 수가 없습니다.
+        백두산은 한 번 가기도 쉽지 않은 곳인데, 이번 여행만큼은 제대로 남기고 싶었습니다.
+      </p>
+      <p class="small" style="margin:0 0 10px">
+        그래서 사진이 <b>방문지별로 저절로 모이도록</b> 만들었습니다.
+        미션과 점수는 재미로 붙인 것 같지만 사실은 분류 장치입니다 —
+        독사진 · 2인 · 단체 · 풍경으로 나뉘어 쌓이면 여행이 끝난 뒤 그대로 편집에 쓸 수 있습니다.
+        한 칸에 한 장만 남기는 것도, 나중에 수백 장 중에서 고르는 부담을 없애려는 것입니다.
+      </p>
+      <p class="small" style="margin:0 0 14px">
+        잘 찍은 사진이 아니어도 괜찮습니다. 버스에서 졸던 얼굴, 밥 먹다 웃음 터진 순간 —
+        그런 사진이 오래 남습니다. 편하게 많이 올려주세요.
+        그 자료로 우리 여행의 쇼츠를 만들겠습니다.
+      </p>
       <div class="row"><div class="em">🧑</div><div class="t">
         <b>오동석</b><small>51기 · 3조 인솔자</small></div></div>
       <div class="row">
