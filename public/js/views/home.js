@@ -110,7 +110,7 @@ export default async function renderHome(host) {
       <div class="ggrid">
         ${feed.items.slice(0, 9).map((it) => `
           <div class="gitem" data-open="${it.id}">
-            <img loading="lazy" src="/api/thumb/${it.id}" alt="">
+            <img loading="lazy" src="/api/thumb/${it.id}?v=${it.v || 0}" alt="">
             ${it.media_type === 'video' ? '<span class="vid">▶</span>' : ''}
             <span class="badge">${esc(it.uploader)}</span>
           </div>`).join('')}

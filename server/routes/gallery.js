@@ -5,7 +5,7 @@ import db from '../db.js';
 import { UPLOAD_DIR, THUMB_DIR } from '../config.js';
 import { requireAuth } from '../middleware/auth.js';
 import { PLACES, CONQUER_KEYS, MEMBER_MISSION_KEYS } from '../data/places.js';
-import { makeVideoThumb } from '../lib/thumb.js';
+import { makeThumb } from '../lib/thumb.js';
 import { leaderboard, groupBoard, badgesFor, userScore } from '../lib/scoring.js';
 
 const router = express.Router();
@@ -13,10 +13,25 @@ router.use(requireAuth);
 
 const SELECT_UPLOAD = `
   SELECT up.id, up.place_slug, up.mission, up.media_type, up.caption, up.bytes,
-         up.duration, up.created_at, up.taken_at, up.points, up.thumb_path,
+         up.duration, up.created_at, up.updated_at, up.taken_at, up.points, up.thumb_path,
          u.id AS uid, u.name AS uploader, u.grp AS uploader_group
   FROM uploads up JOIN users u ON u.id = up.user_id
 `;
+
+/**
+ * 자료가 바뀌면 값이 달라지는 짧은 표식.
+ *
+ * 주소가 /api/thumb/7 로 고정이면 브라우저가 7일간 캐시해서 옛 그림을 계속 보여준다.
+ * 문제가 되는 경우가 둘 있다.
+ *  - 미션 칸을 교체하면 id 는 그대로인데 내용만 바뀐다
+ *  - SQLite 는 지운 id 를 다시 쓴다. 마지막 사진을 지우고 새로 올리면 같은 id 를 받는다
+ * 그래서 주소 끝에 이 값을 붙여 내용이 바뀌면 주소도 바뀌게 한다.
+ */
+const ver = (r) => {
+  const t = String(r.updated_at || r.created_at || '').replace(/\D/g, '').slice(-10);
+  // 같은 초 안에 교체하면 시각만으로는 구분이 안 되므로 크기도 섞는다
+  return r.bytes ? `${t}-${r.bytes}` : t;
+};
 
 function withTags(rows) {
   if (!rows.length) return rows;
@@ -34,6 +49,7 @@ function withTags(rows) {
     ...r,
     hasThumb: !!r.thumb_path,
     thumb_path: undefined,
+    v: ver(r),
     tags: byUpload.get(r.id) || [],
   }));
 }
@@ -67,7 +83,8 @@ router.get('/gallery', (req, res) => {
 /** 방문지별 내 진행 상황 + 전체 통계 */
 router.get('/progress', (req, res) => {
   const mine = db.prepare(
-    `SELECT place_slug, mission, COUNT(*) c, MAX(id) AS id
+    `SELECT place_slug, mission, COUNT(*) c, MAX(id) AS id,
+            MAX(COALESCE(updated_at, created_at)) AS at
      FROM uploads WHERE user_id = ? GROUP BY place_slug, mission`
   ).all(req.user.id);
   const all = db.prepare(
@@ -78,7 +95,8 @@ router.get('/progress', (req, res) => {
   const slotMap = {};   // 미션 칸에 현재 들어있는 업로드 id (교체 대상 미리보기용)
   for (const r of mine) {
     (mineMap[r.place_slug] ||= {})[r.mission] = r.c;
-    (slotMap[r.place_slug] ||= {})[r.mission] = r.id;
+    // 교체하면 id 는 그대로이고 내용만 바뀌므로 버전도 같이 준다
+    (slotMap[r.place_slug] ||= {})[r.mission] = `${r.id}?v=${ver({ updated_at: r.at })}`;
   }
   const allMap = Object.fromEntries(all.map((r) => [r.place_slug, { count: r.c, people: r.people }]));
 
@@ -189,19 +207,20 @@ router.get('/thumb/:id', async (req, res) => {
     const abs = path.join(THUMB_DIR, row.thumb_path);
     if (abs.startsWith(THUMB_DIR) && fs.existsSync(abs)) return sendFile(req, res, abs, 'image/jpeg');
   }
-  if (row.media_type === 'photo') {
-    return sendFile(req, res, path.join(UPLOAD_DIR, row.file_path), row.mime);
-  }
-
-  // 썸네일 없는 영상 — 예전에 올라왔거나 만들기에 실패한 것. 여기서 한 번 만들어 둔다.
+  // 썸네일 없는 자료 — 예전에 올라왔거나 만들기에 실패한 것. 여기서 한 번 만들어 둔다.
+  const isVideo = row.media_type === 'video';
   if (!makingThumb.has(id)) {
-    makingThumb.set(id, makeVideoThumb(path.join(UPLOAD_DIR, row.file_path))
+    makingThumb.set(id, makeThumb(path.join(UPLOAD_DIR, row.file_path), isVideo)
       .finally(() => setTimeout(() => makingThumb.delete(id), 1000)));
   }
   const made = await makingThumb.get(id);
   if (made) {
     db.prepare('UPDATE uploads SET thumb_path = ? WHERE id = ?').run(made, id);
     return sendFile(req, res, path.join(THUMB_DIR, made), 'image/jpeg');
+  }
+  // 사진은 만들기에 실패해도 원본이라도 보여준다 (영상은 아래 대체 그림)
+  if (!isVideo) {
+    return sendFile(req, res, path.join(UPLOAD_DIR, row.file_path), row.mime);
   }
   // 썸네일을 못 만든 영상(아이폰에서 종종 실패한다). 404 를 주면 갤러리에
   // 깨진 이미지 물음표가 뜨므로, 영상임을 알 수 있는 그림을 대신 보낸다.

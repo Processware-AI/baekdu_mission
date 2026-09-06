@@ -89,7 +89,7 @@ async function load(host, reset) {
 
   grid.innerHTML = items.map((it, i) => `
     <div class="gitem" data-i="${i}">
-      <img loading="lazy" src="/api/thumb/${it.id}" alt="${esc(it.caption || '')}">
+      <img loading="lazy" src="/api/thumb/${it.id}?v=${it.v || 0}" alt="${esc(it.caption || '')}">
       ${it.media_type === 'video' ? '<span class="vid">▶</span>' : ''}
       <span class="badge">${esc(it.uploader)}</span>
     </div>`).join('');
@@ -126,8 +126,8 @@ export function lightbox(idx, host) {
       </div>
       <div class="stage">
         ${it.media_type === 'video'
-          ? `<video src="/api/media/${it.id}" controls playsinline autoplay style="max-height:100%"></video>`
-          : `<img src="/api/media/${it.id}" alt="">`}
+          ? `<video src="/api/media/${it.id}?v=${it.v || 0}" controls playsinline autoplay style="max-height:100%"></video>`
+          : `<img src="/api/media/${it.id}?v=${it.v || 0}" alt="">`}
       </div>
       <div class="info">
         <div class="chips">
