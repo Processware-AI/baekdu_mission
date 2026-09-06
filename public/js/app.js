@@ -9,6 +9,7 @@ import renderMission from './views/mission.js';
 import renderGallery from './views/gallery.js';
 import renderRank from './views/rank.js';
 import renderGuide from './views/guide.js';
+import renderHelp from './views/help.js';
 import renderMe from './views/me.js';
 import renderAdmin from './views/admin.js';
 
@@ -30,6 +31,7 @@ const VIEWS = {
   gallery: { title: '갤러리', render: renderGallery },
   rank: { title: '랭킹', render: renderRank },
   guide: { title: '여행 안내', render: renderGuide },
+  help: { title: '사용 가이드', render: renderHelp },
   me: { title: '내 정보', render: renderMe },
   admin: { title: '운영진', render: renderAdmin },
 };
@@ -53,6 +55,7 @@ function shell() {
           <div class="sub" id="vsub"></div>
         </div>
         <button class="icon-btn" id="btn-guide" title="여행 안내">📘</button>
+        <button class="icon-btn" id="btn-help" title="사용 가이드">❓</button>
         <button class="icon-btn" id="btn-me" title="내 정보">👤</button>
       </header>
       <main id="view" class="wrap"></main>
@@ -66,6 +69,7 @@ function shell() {
     <div class="qbar" id="qbar" hidden></div>`;
 
   $('#btn-guide').onclick = () => go('guide');
+  $('#btn-help').onclick = () => go('help');
   $('#btn-me').onclick = () => go('me');
 }
 

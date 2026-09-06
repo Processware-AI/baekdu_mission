@@ -341,6 +341,10 @@ body.sheet-open .qbar{visibility:hidden; pointer-events:none}
 .kv dt{color:var(--muted); font-weight:600; white-space:nowrap}
 .kv dd{margin:0; text-align:right; font-weight:600}
 .list-plain{margin:0; padding-left:18px; display:grid; gap:5px; font-size:13px; line-height:1.5}
+/* 순서가 중요한 안내(사진 올리는 법 등) */
+.list-num{margin:0; padding-left:1.35em; display:grid; gap:6px; font-size:13.5px; line-height:1.6}
+.list-num li{padding-left:2px}
+.list-num li::marker{color:var(--accent); font-weight:700}
 .list-plain li::marker{color:var(--accent)}
 .sk{background:linear-gradient(90deg,var(--line),var(--raise),var(--line)); background-size:200% 100%;
   animation:sk 1.4s infinite; border-radius:8px; height:14px}
