@@ -101,6 +101,16 @@ export default async function renderHelp(host) {
       <h2>👨‍💻 만든 사람</h2>
       <div class="row"><div class="em">🧑</div><div class="t">
         <b>오동석</b><small>51기 · 3조 인솔자</small></div></div>
+      <div class="row">
+        <div class="em">📱</div>
+        <div class="t"><b>전화</b><small>앱이 안 되거나 궁금한 점이 있으면 연락 주세요</small></div>
+        <a class="btn sm ghost" href="tel:01087860488">010-8786-0488</a>
+      </div>
+      <div class="row">
+        <div class="em">✉️</div>
+        <div class="t"><b>이메일</b><small>dsoh@processware.co.kr</small></div>
+        <a class="btn sm ghost" href="mailto:dsoh@processware.co.kr">메일 쓰기</a>
+      </div>
       <div class="section-title" style="margin-top:12px">쓰인 것</div>
       <ul class="list-plain" style="margin-top:8px">
         <li>Node.js + Express · SQLite · 순수 자바스크립트 (빌드 도구 없음)</li>
