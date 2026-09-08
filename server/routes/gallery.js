@@ -2,7 +2,7 @@ import express from 'express';
 import path from 'node:path';
 import fs from 'node:fs';
 import db from '../db.js';
-import { UPLOAD_DIR, THUMB_DIR } from '../config.js';
+import { UPLOAD_DIR, THUMB_DIR, ENTRY_DIR } from '../config.js';
 import { requireAuth } from '../middleware/auth.js';
 import { PLACES, CONQUER_KEYS, MEMBER_MISSION_KEYS } from '../data/places.js';
 import { makeThumb } from '../lib/thumb.js';
@@ -117,6 +117,31 @@ router.get('/progress', (req, res) => {
 });
 
 /** 내 요약 (점수, 순위, 배지) */
+/**
+ * 중국 전자입국신고서 — 로그인한 본인 것만.
+ *
+ * 여권번호가 적힌 문서라 주소에 남의 것을 넣어볼 여지를 두지 않는다.
+ * (id 를 받지 않고 세션의 이름으로만 찾는다)
+ */
+router.get('/me/entry-form', (req, res) => {
+  const name = String(req.user.name || '');
+  // 이름에 경로 문자가 섞이는 일은 없지만, 파일 경로를 만들 때는 확인한다
+  if (!name || /[\\/.]/.test(name)) return res.status(404).end();
+  const abs = path.join(ENTRY_DIR, `${name}.jpg`);
+  if (!abs.startsWith(ENTRY_DIR) || !fs.existsSync(abs)) return res.status(404).end();
+  // 주소가 모두에게 같아서(/api/me/entry-form) 캐시해 두면 한 기기에서
+  // 계정을 바꿨을 때 앞사람 문서가 그대로 나온다. 여권번호가 담긴 문서라 저장하지 않는다.
+  return sendFile(req, res, abs, 'image/jpeg', 'no-store, private');
+});
+
+/** 신고서가 있는지만 알려준다 (내 정보 화면에서 카드를 그릴지 판단) */
+router.get('/me/entry-form/exists', (req, res) => {
+  const name = String(req.user.name || '');
+  const ok = !!name && !/[\\/.]/.test(name) && fs.existsSync(path.join(ENTRY_DIR, `${name}.jpg`));
+  res.setHeader('Cache-Control', 'no-store, private');
+  res.json({ has: ok });
+});
+
 router.get('/me/summary', (req, res) => {
   const board = leaderboard({ limit: 200 });
   const meRow = board.find((r) => r.id === req.user.id);
@@ -160,11 +185,11 @@ router.get('/feed', (_req, res) => {
 });
 
 /** 미디어 스트리밍 (로그인 필수) */
-function sendFile(req, res, absPath, mime) {
+function sendFile(req, res, absPath, mime, cache = 'private, max-age=604800') {
   if (!fs.existsSync(absPath)) return res.status(404).end();
   const stat = fs.statSync(absPath);
   const range = req.headers.range;
-  res.setHeader('Cache-Control', 'private, max-age=604800');
+  res.setHeader('Cache-Control', cache);
   if (mime) res.setHeader('Content-Type', mime);
   res.setHeader('Accept-Ranges', 'bytes');
 

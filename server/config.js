@@ -17,8 +17,14 @@ export const THUMB_DIR = path.join(DATA_DIR, 'thumbs');
 export const TMP_DIR = path.join(DATA_DIR, 'tmp');
 export const DB_FILE = path.join(DATA_DIR, 'baekdu.db');
 export const PUBLIC_DIR = path.join(ROOT, 'public');
+/**
+ * 중국 전자입국신고서 보관 위치.
+ * 여권번호가 담긴 개인 문서라 public 에 두지 않는다.
+ * 파일 이름은 참가자 이름(예: 강은숙.jpg) — 로그인한 본인 것만 내려간다.
+ */
+export const ENTRY_DIR = path.join(DATA_DIR, 'entry');
 
-for (const dir of [DATA_DIR, UPLOAD_DIR, THUMB_DIR, TMP_DIR]) {
+for (const dir of [DATA_DIR, UPLOAD_DIR, THUMB_DIR, TMP_DIR, ENTRY_DIR]) {
   fs.mkdirSync(dir, { recursive: true });
 }
 

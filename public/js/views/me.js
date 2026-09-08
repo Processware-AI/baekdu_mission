@@ -11,6 +11,7 @@ export default async function renderMe(host) {
   const bus = S.bundle.buses.find((b) => b.id === u.bus);
   const day3 = S.bundle.day3BusByGroup[u.group];
   const pending = await queueSize();
+  const entry = await api.get('/api/me/entry-form/exists').catch(() => ({ has: false }));
   const q = getQuality();
 
   host.innerHTML = `
@@ -37,6 +38,22 @@ export default async function renderMe(host) {
         <div><b>${sm.stats.uploads}</b><span>업로드</span></div>
       </div>` : ''}
     </section>
+
+    ${entry.has ? `
+    <section class="card">
+      <h2>🛂 중국 전자입국신고서</h2>
+      <p class="small muted" style="margin:0 0 10px">
+        입국 심사 때 이 화면의 <b>QR코드</b>를 보여주시면 됩니다.
+        눌러서 크게 보고, 미리 저장해 두셔도 좋습니다.
+      </p>
+      <figure class="figure" id="m-entry" style="cursor:pointer">
+        <img src="/api/me/entry-form" alt="중국 전자입국신고서">
+        <figcaption>👆 눌러서 크게 보기</figcaption>
+      </figure>
+      <div class="alert warn" style="margin-top:10px"><div class="ic">📵</div><div>
+        <b>현지에서 인터넷이 안 될 수 있습니다</b>
+        <p>출발 전에 크게 열어 <b>화면을 캡처</b>해 두시면 안심입니다.</p></div></div>
+    </section>` : ''}
 
     ${u.group ? `
     <section class="card">
@@ -118,6 +135,7 @@ export default async function renderMe(host) {
   host.querySelector('#m-in')?.addEventListener('click', () => { location.hash = '#/gallery'; });
   host.querySelector('#m-admin')?.addEventListener('click', () => { location.hash = '#/admin'; });
   host.querySelector('#m-pw').onclick = passwordSheet;
+  host.querySelector('#m-entry')?.addEventListener('click', showEntryForm);
   host.querySelector('#m-out').onclick = async () => {
     if (!await confirmSheet('로그아웃', '다시 로그인하려면 이름과 비밀번호가 필요합니다.', '로그아웃')) return;
     suspendRouting();
@@ -158,4 +176,26 @@ function passwordSheet() {
       err.textContent = e2.message; err.hidden = false; e.target.disabled = false;
     }
   };
+}
+
+/**
+ * 입국신고서 전체화면.
+ *
+ * 입국 심사대에서 QR 을 보여줘야 하므로 화면 폭을 꽉 채워 크게 띄우고,
+ * 넘치는 부분은 위아래로 넘겨 보게 한다.
+ * (앱 전체가 확대를 막아둬서, 손가락으로 키우는 대신 이렇게 크게 보여준다)
+ */
+function showEntryForm() {
+  const el = document.createElement('div');
+  el.className = 'entry-full';
+  el.innerHTML = `
+    <div class="bar">
+      <b>중국 전자입국신고서</b>
+      <button class="icon-btn" data-x aria-label="닫기">✕</button>
+    </div>
+    <div class="doc"><img src="/api/me/entry-form" alt="중국 전자입국신고서"></div>`;
+  const close = () => { el.remove(); document.body.style.overflow = ''; };
+  el.querySelector('[data-x]').onclick = close;
+  document.body.style.overflow = 'hidden';
+  document.body.append(el);
 }
