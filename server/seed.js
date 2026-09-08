@@ -31,7 +31,7 @@ const updateUserMeta = db.prepare(`
 `);
 
 export function seed({ resetPasswords = false } = {}) {
-  const summary = { places: 0, created: 0, updated: 0, admin: null, guides: 0, renamed: [] };
+  const summary = { places: 0, created: 0, updated: 0, admin: null, guides: 0, renamed: [], removed: [] };
 
   const run = db.transaction(() => {
     for (const p of PLACES) {
@@ -72,6 +72,17 @@ export function seed({ resetPasswords = false } = {}) {
         summary.updated += 1;
       }
     }
+
+    // 일정이 바뀌어 사라진 방문지는 지운다.
+    // 안 지우면 운영진 '방문지별 수집 현황' 에 0장짜리 유령 항목으로 남는다.
+    // 자료가 올라와 있는 곳은 건드리지 않는다.
+    const known = PLACES.map((p) => p.slug);
+    const stale = db.prepare(
+      `SELECT slug FROM places WHERE slug NOT IN (${known.map(() => '?').join(',')})
+         AND slug NOT IN (SELECT DISTINCT place_slug FROM uploads)`
+    ).all(...known);
+    for (const r of stale) db.prepare('DELETE FROM places WHERE slug = ?').run(r.slug);
+    summary.removed = stale.map((r) => r.slug);
 
     const admin = findUser.get(ADMIN_ID);
     if (!admin) {
