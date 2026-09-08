@@ -235,7 +235,10 @@ async function saveEntryForm(btn) {
   // 공유 시트가 떠 있는 동안 버튼이 '준비 중…' 으로 멈춰 보이지 않게.
   done();
 
-  if (navigator.canShare?.({ files: [file] })) {
+  // 아이폰만 공유 시트를 쓴다. 거기서 '이미지 저장'을 고르면 사진 앱에 들어간다.
+  // 안드로이드 공유 시트에는 그런 항목이 없고 앱 목록만 떠서, 저장하려던
+  // 사람이 무엇을 눌러야 할지 알 수 없다. 안드로이드는 바로 내려받는 편이 낫다.
+  if (isIOS() && navigator.canShare?.({ files: [file] })) {
     try {
       await navigator.share({ files: [file], title: '중국 전자입국신고서' });
       return;
@@ -254,8 +257,15 @@ async function saveEntryForm(btn) {
     a.click();
     a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 5000);
-    toast('저장했습니다. <b>사진</b> 또는 <b>파일</b> 앱에서 확인하세요.', 'ok', 4500);
+    toast('저장했습니다. <b>갤러리</b>나 <b>파일(다운로드)</b> 앱에서 볼 수 있습니다.', 'ok', 5000);
   } catch {
     toast('자동 저장이 막혀 있습니다. 신고서를 <b>길게 눌러</b> 저장해 주세요.', 'err', 6000);
   }
+}
+
+/** 아이폰·아이패드인지 (아이패드는 맥으로 보고하므로 터치 여부까지 본다) */
+function isIOS() {
+  const ua = navigator.userAgent || '';
+  return /iPhone|iPad|iPod/.test(ua)
+    || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
 }
