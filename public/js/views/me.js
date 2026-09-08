@@ -50,9 +50,10 @@ export default async function renderMe(host) {
         <img src="/api/me/entry-form" alt="중국 전자입국신고서">
         <figcaption>👆 눌러서 크게 보기</figcaption>
       </figure>
+      <button class="btn ghost block sm" style="margin-top:8px" id="m-entry-save">📥 휴대폰에 저장</button>
       <div class="alert warn" style="margin-top:10px"><div class="ic">📵</div><div>
         <b>현지에서 인터넷이 안 될 수 있습니다</b>
-        <p>출발 전에 크게 열어 <b>화면을 캡처</b>해 두시면 안심입니다.</p></div></div>
+        <p>출발 전에 <b>휴대폰에 저장</b>해 두시면 인터넷 없이도 보여드릴 수 있습니다.</p></div></div>
     </section>` : ''}
 
     ${u.group ? `
@@ -136,6 +137,7 @@ export default async function renderMe(host) {
   host.querySelector('#m-admin')?.addEventListener('click', () => { location.hash = '#/admin'; });
   host.querySelector('#m-pw').onclick = passwordSheet;
   host.querySelector('#m-entry')?.addEventListener('click', showEntryForm);
+  host.querySelector('#m-entry-save')?.addEventListener('click', (e) => saveEntryForm(e.currentTarget));
   host.querySelector('#m-out').onclick = async () => {
     if (!await confirmSheet('로그아웃', '다시 로그인하려면 이름과 비밀번호가 필요합니다.', '로그아웃')) return;
     suspendRouting();
@@ -191,11 +193,69 @@ function showEntryForm() {
   el.innerHTML = `
     <div class="bar">
       <b>중국 전자입국신고서</b>
+      <button class="btn sm ghost" data-save>📥 저장</button>
       <button class="icon-btn" data-x aria-label="닫기">✕</button>
     </div>
     <div class="doc"><img src="/api/me/entry-form" alt="중국 전자입국신고서"></div>`;
   const close = () => { el.remove(); document.body.style.overflow = ''; };
   el.querySelector('[data-x]').onclick = close;
+  el.querySelector('[data-save]').onclick = (e) => saveEntryForm(e.currentTarget);
   document.body.style.overflow = 'hidden';
   document.body.append(el);
+}
+
+/**
+ * 신고서를 휴대폰에 저장.
+ *
+ * 아이폰과 안드로이드가 방식이 다르다.
+ *  - 공유 시트(navigator.share)가 되면 그쪽을 쓴다. 아이폰에서 '이미지 저장'을
+ *    고르면 사진 앱에 들어가서, 인터넷 없이도 심사대에서 바로 보여줄 수 있다.
+ *  - 안 되면(안드로이드 일부, http 접속 등) 파일 내려받기로 넘어간다.
+ * 둘 다 막히면 화면을 길게 눌러 저장하는 방법을 알려준다.
+ */
+async function saveEntryForm(btn) {
+  const label = btn?.textContent;
+  const done = () => { if (btn) { btn.disabled = false; btn.textContent = label; } };
+  if (btn) { btn.disabled = true; btn.textContent = '준비 중…'; }
+
+  let blob;
+  try {
+    const res = await fetch('/api/me/entry-form', { credentials: 'same-origin' });
+    if (!res.ok) throw new Error('신고서를 불러오지 못했습니다.');
+    blob = await res.blob();
+  } catch (e) {
+    toast(`${e.message} 잠시 뒤 다시 시도해 주세요.`, 'err', 4500);
+    return done();
+  }
+
+  const filename = `중국입국신고서_${S.user.name}.jpg`;
+  const file = new File([blob], filename, { type: 'image/jpeg' });
+
+  // 느린 건 내려받는 부분이다. 여기서 버튼을 되돌려 둔다 —
+  // 공유 시트가 떠 있는 동안 버튼이 '준비 중…' 으로 멈춰 보이지 않게.
+  done();
+
+  if (navigator.canShare?.({ files: [file] })) {
+    try {
+      await navigator.share({ files: [file], title: '중국 전자입국신고서' });
+      return;
+    } catch (e) {
+      if (e?.name === 'AbortError') return;   // 사용자가 취소
+      // 그 밖의 이유(권한·시점)면 아래 내려받기로 넘어간다
+    }
+  }
+
+  try {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.append(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
+    toast('저장했습니다. <b>사진</b> 또는 <b>파일</b> 앱에서 확인하세요.', 'ok', 4500);
+  } catch {
+    toast('자동 저장이 막혀 있습니다. 신고서를 <b>길게 눌러</b> 저장해 주세요.', 'err', 6000);
+  }
 }
