@@ -95,6 +95,22 @@ CREATE TABLE IF NOT EXISTS notices (
   created_at TEXT NOT NULL DEFAULT (datetime('now','localtime'))
 );
 
+/**
+ * 사용 기록 — 누가 언제 로그인했고 어느 화면을 봤는지.
+ * 운영진이 "아직 앱을 안 쓰신 분" 을 찾아 챙기기 위한 것이다.
+ *   kind='login'  detail=null
+ *   kind='view'   detail=화면 이름(home·schedule·mission·gallery·rank·guide·help·me)
+ */
+CREATE TABLE IF NOT EXISTS activity (
+  id         INTEGER PRIMARY KEY,
+  user_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  kind       TEXT    NOT NULL,
+  detail     TEXT,
+  created_at TEXT    NOT NULL DEFAULT (datetime('now','localtime'))
+);
+CREATE INDEX IF NOT EXISTS idx_activity_user ON activity(user_id, created_at);
+CREATE INDEX IF NOT EXISTS idx_activity_kind ON activity(kind, created_at);
+
 CREATE TABLE IF NOT EXISTS sessions (
   sid    TEXT PRIMARY KEY,
   sess   TEXT NOT NULL,

@@ -302,6 +302,27 @@ async function main() {
     ok(delMine.status === 200, '본인 자료는 삭제 가능');
     ok(!fs.existsSync(path.join(expected, files[0] || 'x')), '삭제 시 실제 파일도 제거');
 
+    console.log('\n▶ 사용 현황');
+    await req('POST', '/api/activity', { json: { view: 'schedule' } });
+    await req('POST', '/api/activity', { json: { view: 'gallery' } });
+    const badView = await req('POST', '/api/activity', { json: { view: '<script>' } });
+    ok(badView.status === 204, '엉뚱한 화면 이름은 조용히 무시');
+
+    await req('POST', '/api/auth/login', { json: { name: 'admin', password: 'testpw123' } });
+    const act = await req('GET', '/api/admin/activity');
+    ok(act.status === 200, '사용 현황 조회');
+    ok(act.data.totals.members === 75, `접속률 분모는 참가자 (${act.data.totals.members}명)`);
+    ok(act.data.totals.loggedIn >= 1, '로그인한 참가자 집계');
+    ok(act.data.byView.some((v) => v.view === 'schedule'), '화면별 사용에 일정 기록');
+    ok(!act.data.byView.some((v) => v.view === 'admin'), '화면별 사용에 운영진 이동은 빠짐');
+    ok(act.data.people.every((p) => p.name !== 'admin'), '사람별 목록에 운영진 없음');
+    const never = act.data.people.filter((p) => !p.logins);
+    ok(never.length > 0 && never.every((p) => !p.lastSeen), '미접속자는 마지막 접속이 없음');
+
+    await req('POST', '/api/auth/login', { json: { name: '손신기', password: '01037320154' } });
+    ok((await req('GET', '/api/admin/activity')).status === 403, '참가자는 사용 현황 못 봄');
+    await req('POST', '/api/auth/login', { json: { name: '박화서', password: '01087503934' } });
+
     console.log('\n▶ 가이드 계정');
     const gLogin = await req('POST', '/api/auth/login', { json: { name: 'guide01', password: 'gpw123' } });
     ok(gLogin.status === 200 && gLogin.data.user.isGuide === true && gLogin.data.user.isAdmin === false,

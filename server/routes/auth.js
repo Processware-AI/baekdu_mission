@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import db from '../db.js';
 import { digits } from '../seed.js';
 import { requireAuth } from '../middleware/auth.js';
+import { logActivity } from '../lib/activity.js';
 
 const router = express.Router();
 
@@ -79,6 +80,7 @@ router.post('/login', (req, res) => {
     if (err) return res.status(500).json({ error: '로그인 처리 중 오류가 발생했습니다.' });
     req.session.uid = u.id;
     req.session.cookie.maxAge = 1000 * 60 * 60 * 24 * 60; // 60일
+    logActivity(u.id, 'login');
     req.session.save(() => res.json({ user: publicUser(u) }));
   });
 });

@@ -1,6 +1,7 @@
 import express from 'express';
 import db from '../db.js';
 import { requireAuth } from '../middleware/auth.js';
+import { logActivity } from '../lib/activity.js';
 import { PLACES, DAYS, MISSIONS, FREE_MISSIONS, ADMIN_MISSIONS } from '../data/places.js';
 import { GROUPS, BUSES, DAY3_BUS_BY_GROUP } from '../data/participants.js';
 import { TRIP, CONTACTS, ALERTS, PREP, FEES, SPONSORS, SHUTTLE } from '../data/guide.js';
@@ -49,6 +50,14 @@ router.get('/bundle', (req, res) => {
     shuttle: SHUTTLE,
     notices: noticeRows,
   });
+});
+
+/** 화면을 열었다는 기록. 앱이 화면을 바꿀 때마다 한 번씩 보낸다. */
+const VIEWS = ['home', 'schedule', 'mission', 'gallery', 'rank', 'guide', 'help', 'me', 'admin'];
+router.post('/activity', (req, res) => {
+  const view = String(req.body?.view || '');
+  if (VIEWS.includes(view)) logActivity(req.user.id, 'view', view);
+  res.status(204).end();
 });
 
 /** 태그(함께 찍은 사람) 선택용 명단 — 연락처는 포함하지 않음 */

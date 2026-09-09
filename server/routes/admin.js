@@ -82,6 +82,56 @@ router.post('/reset-uploads', (req, res) => {
   res.json({ ok: true, uploads: before.cnt, bytes: before.bytes, events });
 });
 
+/**
+ * 사용 현황 — 누가 앱을 쓰고 있고 누가 아직 안 들어왔는지.
+ * 출발 전에 "아직 못 들어오신 분" 을 찾아 개별로 챙기려는 용도다.
+ */
+router.get('/activity', (_req, res) => {
+  const totals = db.prepare(`
+    SELECT
+      (SELECT COUNT(*) FROM users WHERE is_admin=0 AND is_guide=0) AS members,
+      -- 접속률은 참가자 기준이라 운영진·가이드는 뺀다
+      (SELECT COUNT(DISTINCT a.user_id) FROM activity a JOIN users u ON u.id=a.user_id
+        WHERE a.kind='login' AND u.is_admin=0 AND u.is_guide=0) AS loggedIn,
+      (SELECT COUNT(*) FROM activity a JOIN users u ON u.id=a.user_id
+        WHERE a.kind='login' AND u.is_admin=0) AS logins,
+      (SELECT COUNT(*) FROM activity a JOIN users u ON u.id=a.user_id
+        WHERE a.kind='view' AND u.is_admin=0) AS views
+  `).get();
+
+  // 화면별 사용 횟수
+  // 운영진 자신의 이동은 빼야 총계와 맞는다
+  const byView = db.prepare(
+    `SELECT a.detail AS view, COUNT(*) AS cnt, COUNT(DISTINCT a.user_id) AS people
+       FROM activity a JOIN users u ON u.id = a.user_id
+      WHERE a.kind='view' AND u.is_admin = 0
+      GROUP BY a.detail ORDER BY cnt DESC`
+  ).all();
+
+  // 사람별 요약 (참가자·가이드 모두. 운영진은 뺀다)
+  const people = db.prepare(`
+    SELECT u.id, u.name, u.gi, u.grp, u.is_guide, u.pw_changed,
+           SUM(CASE WHEN a.kind='login' THEN 1 ELSE 0 END) AS logins,
+           SUM(CASE WHEN a.kind='view'  THEN 1 ELSE 0 END) AS views,
+           MAX(a.created_at) AS lastSeen,
+           (SELECT COUNT(*) FROM uploads up WHERE up.user_id = u.id) AS uploads
+      FROM users u LEFT JOIN activity a ON a.user_id = u.id
+     WHERE u.is_admin = 0
+     GROUP BY u.id
+     ORDER BY (MAX(a.created_at) IS NULL), MAX(a.created_at) DESC, u.sort_no
+  `).all();
+
+  // 최근 기록
+  const recent = db.prepare(`
+    SELECT a.kind, a.detail, a.created_at, u.name
+      FROM activity a JOIN users u ON u.id = a.user_id
+     WHERE u.is_admin = 0
+     ORDER BY a.id DESC LIMIT 60
+  `).all();
+
+  res.json({ totals, byView, people, recent });
+});
+
 /** 참가자 관리 (연락처 포함 — 운영진만) */
 router.get('/participants', (_req, res) => {
   const rows = db.prepare(`

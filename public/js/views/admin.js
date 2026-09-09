@@ -18,6 +18,7 @@ export default async function renderAdmin(host) {
       <button data-v="export" class="${tab === 'export' ? 'on' : ''}">📦 내보내기</button>
       <button data-v="people" class="${tab === 'people' ? 'on' : ''}">👥 참가자</button>
       <button data-v="notice" class="${tab === 'notice' ? 'on' : ''}">📢 공지</button>
+      <button data-v="usage" class="${tab === 'usage' ? 'on' : ''}">📈 사용현황</button>
       <button data-v="reset" class="${tab === 'reset' ? 'on' : ''}">🧹 초기화</button>
     </div>
     <div id="a-body"></div>`;
@@ -33,6 +34,7 @@ export default async function renderAdmin(host) {
   if (tab === 'export') await exportView(body);
   if (tab === 'people') await peopleView(body);
   if (tab === 'notice') await noticeView(body, host);
+  if (tab === 'usage') await usageView(body);
   if (tab === 'reset') await resetView(body);
 }
 
@@ -347,4 +349,100 @@ async function noticeView(body, host) {
       renderAdmin(host);
     };
   });
+}
+
+// ── 사용 현황 ──────────────────────────────────────────────────
+const VIEW_LABEL = {
+  home: '🏠 홈', schedule: '🗓️ 일정', mission: '📷 미션', gallery: '🖼️ 갤러리',
+  rank: '🏆 랭킹', guide: '📘 여행 안내', help: '❓ 사용 가이드', me: '👤 내 정보',
+  admin: '🛠 운영진',
+};
+
+/**
+ * 누가 앱을 쓰고 있고 누가 아직 안 들어왔는지.
+ * 출발 전에 못 들어오신 분을 찾아 개별로 챙기라고 만든 화면이라,
+ * '아직 안 들어오신 분' 을 맨 위에 크게 둔다.
+ */
+async function usageView(body) {
+  const d = await api.get('/api/admin/activity');
+  const never = d.people.filter((p) => !p.logins);
+  const neverMembers = never.filter((p) => !p.is_guide);
+  const neverGuides = never.filter((p) => p.is_guide);
+  const pct = d.totals.members ? Math.round((d.totals.loggedIn / d.totals.members) * 100) : 0;
+
+  body.innerHTML = `
+    <section class="card">
+      <h2>📈 사용 현황</h2>
+      <div class="scorebar">
+        <div><b>${d.totals.loggedIn}</b><span>들어온 사람</span></div>
+        <div><b>${num(d.totals.logins)}</b><span>로그인 횟수</span></div>
+        <div><b>${num(d.totals.views)}</b><span>화면 열람</span></div>
+      </div>
+      <div style="margin-top:12px">
+        <div style="display:flex;justify-content:space-between;font-size:12px;font-weight:700">
+          <span class="muted">참가자 접속률</span><span>${d.totals.loggedIn} / ${d.totals.members}명 · ${pct}%</span>
+        </div>
+        <div class="progress"><i style="width:${pct}%"></i></div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>🔕 아직 안 들어오신 분 (참가자 ${neverMembers.length}명${
+        neverGuides.length ? ` · 가이드 ${neverGuides.length}명` : ''})</h2>
+      ${never.length ? `
+        <p class="small muted" style="margin:0 0 8px">
+          한 번도 로그인하지 않은 분입니다. 출발 전에 개별로 알려주세요.
+        </p>
+        <div class="chips">
+          ${never.map((p) => `<span class="chip ${p.is_guide ? 'accent' : 'danger'}">${esc(p.name)}${
+            p.is_guide ? ' (가이드)' : `<span class="muted"> ${esc(p.gi || '')}</span>`}</span>`).join('')}
+        </div>`
+        : '<p class="small" style="margin:0">모두 한 번 이상 들어오셨습니다. 🎉</p>'}
+    </section>
+
+    <section class="card">
+      <h2>📱 화면별 사용</h2>
+      ${d.byView.length ? `
+        <div class="kv">
+          ${d.byView.map((v) => `<dt>${esc(VIEW_LABEL[v.view] || v.view)}</dt>
+            <dd>${num(v.cnt)}회 <span class="muted small">· ${v.people}명</span></dd>`).join('')}
+        </div>`
+        : '<p class="small muted" style="margin:0">아직 기록이 없습니다.</p>'}
+    </section>
+
+    <section class="card">
+      <h2>👥 사람별 (${d.people.length}명)</h2>
+      <div class="tbl-scroll">
+        <table class="usage">
+          <thead><tr><th>이름</th><th>로그인</th><th>화면</th><th>올림</th><th>마지막 접속</th></tr></thead>
+          <tbody>
+            ${d.people.map((p) => `<tr class="${p.logins ? '' : 'off'}">
+              <td>${esc(p.name)}${p.is_guide ? ' <span class="chip accent">가이드</span>' : ''}</td>
+              <td>${p.logins || '-'}</td>
+              <td>${p.views || '-'}</td>
+              <td>${p.uploads || '-'}</td>
+              <td>${p.lastSeen ? relTime(p.lastSeen) : '<span class="muted">없음</span>'}</td>
+            </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>🕘 최근 기록</h2>
+      ${d.recent.length ? `
+        <div style="display:grid;gap:7px">
+          ${d.recent.map((r) => `<div class="row" style="padding:6px 0">
+            <div class="em">${r.kind === 'login' ? '🔑' : '👀'}</div>
+            <div class="t"><b>${esc(r.name)}</b>
+              <small>${r.kind === 'login' ? '로그인' : esc(VIEW_LABEL[r.detail] || r.detail || '')}</small></div>
+            <span class="muted small">${relTime(r.created_at)}</span>
+          </div>`).join('')}
+        </div>`
+        : '<p class="small muted" style="margin:0">아직 기록이 없습니다.</p>'}
+    </section>
+
+    <p class="hint center">
+      로그인 시각과 화면 이동만 남깁니다. 무엇을 눌렀는지, 무엇을 보았는지는 기록하지 않습니다.
+    </p>`;
 }

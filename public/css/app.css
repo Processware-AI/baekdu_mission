@@ -337,6 +337,20 @@ body:has(.entry-full) .qbar{visibility:hidden; pointer-events:none}
   border-radius:50%; animation:spin .8s linear infinite; flex:none}
 @keyframes spin{to{transform:rotate(360deg)}}
 
+/* ── 사용 현황 표 ─────────────────────────────────────────────── */
+/* 사람 수만큼 줄이 길어지므로 가로는 넘치면 넘겨 보게 한다 */
+.tbl-scroll{overflow-x:auto; -webkit-overflow-scrolling:touch; margin:0 -4px}
+table.usage{border-collapse:collapse; width:100%; font-size:13px; min-width:19rem}
+table.usage th{font-size:11px; font-weight:700; letter-spacing:.06em; color:var(--faint);
+  text-align:right; padding:6px 8px; border-bottom:1px solid var(--line); white-space:nowrap}
+table.usage th:first-child{text-align:left}
+table.usage td{padding:7px 8px; border-bottom:1px solid var(--line); text-align:right;
+  font-variant-numeric:tabular-nums; white-space:nowrap}
+table.usage td:first-child{text-align:left; font-weight:600}
+table.usage tr:last-child td{border-bottom:0}
+table.usage tr.off td{color:var(--muted)}
+table.usage tr.off td:first-child{color:var(--danger)}
+
 /* ── 토스트 ───────────────────────────────────────────────────── */
 .toast-wrap{position:fixed; left:0; right:0; top:0; z-index:90; display:grid; gap:8px;
   padding:calc(env(safe-area-inset-top) + 10px) 14px 0; pointer-events:none}

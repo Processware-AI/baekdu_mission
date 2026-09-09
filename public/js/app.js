@@ -88,6 +88,10 @@ async function route() {
   document.querySelectorAll('[data-tab]').forEach((a) =>
     a.classList.toggle('on', a.dataset.tab === name));
 
+  // 어느 화면을 열었는지 남긴다 (운영진 사용 현황용).
+  // 실패해도 화면 동작에는 영향이 없어야 하므로 결과를 기다리지 않는다.
+  api.post('/api/activity', { view: name }).catch(() => {});
+
   const host = $('#view');
   host.innerHTML = '<div class="card"><div class="sk" style="width:60%"></div><div class="sk" style="margin-top:10px"></div><div class="sk" style="margin-top:8px;width:80%"></div></div>';
   window.scrollTo(0, 0);
