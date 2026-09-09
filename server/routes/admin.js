@@ -137,7 +137,10 @@ router.get('/activity', (_req, res) => {
       FROM users u LEFT JOIN activity a ON a.user_id = u.id
      WHERE u.is_admin = 0
      GROUP BY u.id
-     ORDER BY (MAX(a.created_at) IS NULL), MAX(a.created_at) DESC, u.sort_no
+     -- 이름에서 사람을 찾는 화면이라 가나다 순으로 둔다.
+     -- 한글 음절은 코드값 순서가 곧 가나다 순이라 그냥 정렬하면 된다.
+     -- 가이드는 이름이 영문이라 앞으로 튀므로 뒤로 모은다.
+     ORDER BY u.is_guide, u.name
   `).all();
 
   // 최근 기록

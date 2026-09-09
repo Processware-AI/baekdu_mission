@@ -316,6 +316,10 @@ async function main() {
     ok(act.data.byView.some((v) => v.view === 'schedule'), '화면별 사용에 일정 기록');
     ok(!act.data.byView.some((v) => v.view === 'admin'), '화면별 사용에 운영진 이동은 빠짐');
     ok(act.data.people.every((p) => p.name !== 'admin'), '사람별 목록에 운영진 없음');
+    const members = act.data.people.filter((p) => !p.is_guide).map((p) => p.name);
+    ok(members.join('|') === [...members].sort((a, b) => a.localeCompare(b, 'ko')).join('|'),
+      '사람별 목록이 가나다 순');
+    ok(act.data.people.slice(-1)[0]?.is_guide === 1, '가이드는 목록 뒤에 모임');
     const never = act.data.people.filter((p) => !p.logins);
     ok(never.length > 0 && never.every((p) => !p.lastSeen), '미접속자는 마지막 접속이 없음');
 
