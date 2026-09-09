@@ -83,6 +83,25 @@ router.post('/reset-uploads', (req, res) => {
 });
 
 /**
+ * 사용 기록만 지우기.
+ *
+ * 사진 초기화와 성격이 달라 따로 둔다. 사진을 지울 때 접속 기록까지
+ * 사라지면 이미 들어와 본 분이 다시 미접속자로 잡혀 명단이 틀려진다.
+ * 반대로 출발 직전에 시험 삼아 눌러본 기록만 털고 싶을 때가 있다.
+ */
+router.post('/reset-activity', (req, res) => {
+  if (String(req.body?.confirm || '').trim() !== RESET_PHRASE) {
+    return res.status(400).json({
+      error: `확인 문구가 다릅니다. "${RESET_PHRASE}" 를 정확히 입력해 주세요.`,
+    });
+  }
+  const before = db.prepare('SELECT COUNT(*) AS cnt FROM activity').get().cnt;
+  db.prepare('DELETE FROM activity').run();
+  console.log(`[reset] ${req.user.name}: 사용 기록 ${before}건 초기화`);
+  res.json({ ok: true, removed: before });
+});
+
+/**
  * 사용 현황 — 누가 앱을 쓰고 있고 누가 아직 안 들어왔는지.
  * 출발 전에 "아직 못 들어오신 분" 을 찾아 개별로 챙기려는 용도다.
  */

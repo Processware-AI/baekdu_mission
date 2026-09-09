@@ -321,6 +321,19 @@ async function main() {
 
     await req('POST', '/api/auth/login', { json: { name: '손신기', password: '01037320154' } });
     ok((await req('GET', '/api/admin/activity')).status === 403, '참가자는 사용 현황 못 봄');
+    ok((await req('POST', '/api/admin/reset-activity', { json: { confirm: '전체삭제' } })).status === 403,
+      '참가자는 사용 기록 못 지움');
+
+    await req('POST', '/api/auth/login', { json: { name: 'admin', password: 'testpw123' } });
+    ok((await req('POST', '/api/admin/reset-activity', { json: { confirm: '삭제' } })).status === 400,
+      '확인 문구가 다르면 거부');
+    const actBefore = await req('GET', '/api/admin/activity');
+    const cleared = await req('POST', '/api/admin/reset-activity', { json: { confirm: '전체삭제' } });
+    ok(cleared.status === 200 && cleared.data.removed > 0, `사용 기록 지우기 (${cleared.data.removed}건)`);
+    const actAfter = await req('GET', '/api/admin/activity');
+    ok(actAfter.data.totals.loggedIn === 0 && actAfter.data.byView.length === 0, '지운 뒤 기록이 비어 있음');
+    ok(actAfter.data.people.length === actBefore.data.people.length, '사람 목록은 그대로');
+
     await req('POST', '/api/auth/login', { json: { name: '박화서', password: '01087503934' } });
 
     console.log('\n▶ 가이드 계정');

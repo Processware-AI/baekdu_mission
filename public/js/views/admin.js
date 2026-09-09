@@ -442,7 +442,52 @@ async function usageView(body) {
         : '<p class="small muted" style="margin:0">아직 기록이 없습니다.</p>'}
     </section>
 
+    <section class="card">
+      <h2>🧽 사용 기록 지우기</h2>
+      <p class="small muted" style="margin:0 0 10px">
+        시험 삼아 눌러본 기록을 털고 출발 시점부터 다시 셀 때 씁니다.
+        사진·영상과 점수는 그대로 두고 <b>접속·화면 기록만</b> 지웁니다.
+      </p>
+      <div class="alert warn"><div class="ic">⚠️</div><div>
+        <b>지우면 "아직 안 들어오신 분" 명단이 초기화됩니다</b>
+        <p>이미 들어와 보신 분도 다시 미접속으로 잡힙니다. 지금 기록 ${num(d.totals.logins)}건 ·
+        화면 ${num(d.totals.views)}건.</p></div></div>
+      <div class="field" style="margin-top:12px">
+        <label for="u-confirm">확인 문구 — <b>${RESET_PHRASE}</b> 를 그대로 입력하세요</label>
+        <input type="text" id="u-confirm" placeholder="${RESET_PHRASE}"
+               inputmode="text" autocomplete="off" autocapitalize="off">
+      </div>
+      <button class="btn danger block" id="u-go" disabled>사용 기록 지우기</button>
+    </section>
+
     <p class="hint center">
       로그인 시각과 화면 이동만 남깁니다. 무엇을 눌렀는지, 무엇을 보았는지는 기록하지 않습니다.
     </p>`;
+
+  const input = body.querySelector('#u-confirm');
+  const go = body.querySelector('#u-go');
+  const sync = () => { go.disabled = input.value.trim() !== RESET_PHRASE; };
+  input.oninput = sync;
+  sync();
+
+  go.onclick = async () => {
+    const yes = await confirmSheet(
+      '사용 기록을 지울까요?',
+      '접속·화면 기록만 지웁니다. 사진과 점수는 그대로입니다. '
+      + '지우면 "아직 안 들어오신 분" 명단이 초기화되어, 이미 들어와 보신 분도 다시 미접속으로 잡힙니다.',
+      '지우기',
+    );
+    if (!yes) return;
+    go.disabled = true;
+    go.textContent = '지우는 중…';
+    try {
+      const r = await api.post('/api/admin/reset-activity', { confirm: input.value.trim() });
+      toast(`🧽 사용 기록 <b>${num(r.removed)}건</b>을 지웠습니다.`, 'ok', 4000);
+      usageView(body);
+    } catch (e) {
+      toast(e.message || '지우지 못했습니다.', 'err', 5000);
+      go.textContent = '사용 기록 지우기';
+      sync();
+    }
+  };
 }
