@@ -456,3 +456,12 @@ table.usage tr.off td:first-child{color:var(--danger)}
   .login{align-content:start; padding-top:22px}
   .login .brand .m{font-size:34px}
 }
+
+/* 만든 사람 — 이야기 끝에 붙는 서명 자리 */
+.devcard{display:flex; align-items:center; gap:14px; padding:12px;
+  border:1px solid var(--line); border-radius:14px; background:var(--raise)}
+.devcard img{width:96px; flex:none; border-radius:12px; display:block}
+.devcard .t{min-width:0}
+.devcard .t b{display:block; font-size:15px; letter-spacing:-.2px}
+.devcard .t small{display:block; color:var(--muted); font-size:12px; margin-top:2px}
+.devcard .t p{margin:8px 0 0; font-size:12.5px; color:var(--muted); line-height:1.5}

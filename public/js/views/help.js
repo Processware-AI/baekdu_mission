@@ -115,8 +115,14 @@ export default async function renderHelp(host) {
         그런 사진이 오래 남습니다. 편하게 많이 올려주세요.
         그 자료로 우리 여행의 쇼츠를 만들겠습니다.
       </p>
-      <div class="row"><div class="em">🧑</div><div class="t">
-        <b>오동석</b><small>51기 · 3조 인솔자</small></div></div>
+      <div class="devcard" style="margin-bottom:12px">
+        <img loading="lazy" src="/img/dev-oh.jpg" alt="만든 사람 오동석">
+        <div class="t">
+          <b>오동석</b>
+          <small>51기 · 3조 인솔자</small>
+          <p>일정표 들고 뛰어다니는 게 일입니다.<br>천지에서 만나요.</p>
+        </div>
+      </div>
       <div class="row">
         <div class="em">📱</div>
         <div class="t"><b>전화</b><small>앱이 안 되거나 궁금한 점이 있으면 연락 주세요</small></div>
