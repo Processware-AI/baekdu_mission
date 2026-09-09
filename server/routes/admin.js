@@ -2,7 +2,7 @@ import express from 'express';
 import path from 'node:path';
 import fs from 'node:fs';
 import bcrypt from 'bcryptjs';
-import archiver from 'archiver';
+import { queueExport, streamZip, queueDepth, uploadsOf, manifestRows, toCsv, MISSION_LABEL } from '../lib/export.js';
 import db from '../db.js';
 import { UPLOAD_DIR, THUMB_DIR } from '../config.js';
 import { requireAdmin } from '../middleware/auth.js';
@@ -260,49 +260,6 @@ router.get('/uploads', (req, res) => {
 
 // ── 내보내기 ────────────────────────────────────────────────────────
 
-function manifestRows() {
-  const rows = db.prepare(`
-    SELECT up.id, p.day, p.seq, p.title AS place, up.place_slug, up.mission,
-           up.media_type, up.file_path, up.caption, up.bytes, up.duration,
-           up.taken_at, up.created_at, u.name AS uploader, u.grp AS grp
-    FROM uploads up
-    JOIN users u ON u.id = up.user_id
-    JOIN places p ON p.slug = up.place_slug
-    ORDER BY p.day, p.seq, up.mission, up.id
-  `).all();
-  const tagMap = new Map();
-  for (const t of db.prepare(
-    `SELECT t.upload_id, u.name FROM upload_tags t JOIN users u ON u.id = t.user_id`
-  ).all()) {
-    if (!tagMap.has(t.upload_id)) tagMap.set(t.upload_id, []);
-    tagMap.get(t.upload_id).push(t.name);
-  }
-  return rows.map((r) => ({ ...r, tags: (tagMap.get(r.id) || []).join(' ') }));
-}
-
-const MISSION_LABEL = {
-  solo: '독사진', duo: '2인', trio: '3인', quad: '4인이상',
-  video: '영상', group: '단체사진', vlog: '브이로그',
-};
-
-function toCsv(rows) {
-  const head = ['파일경로', '일차', '순서', '방문지', '미션', '종류', '업로더', '조', '함께찍은사람', '캡션', '용량(MB)', '길이(초)', '촬영시각', '업로드시각'];
-  const esc = (v) => {
-    const s = v === null || v === undefined ? '' : String(v);
-    return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
-  };
-  const lines = [head.join(',')];
-  for (const r of rows) {
-    lines.push([
-      r.file_path, r.day, r.seq, r.place, MISSION_LABEL[r.mission] || r.mission,
-      r.media_type === 'video' ? '영상' : '사진', r.uploader, r.grp ? `${r.grp}조` : '',
-      r.tags, r.caption, (r.bytes / 1048576).toFixed(2), r.duration ?? '',
-      r.taken_at ?? '', r.created_at,
-    ].map(esc).join(','));
-  }
-  return '﻿' + lines.join('\r\n'); // BOM — 엑셀 한글 깨짐 방지
-}
-
 router.get('/manifest.csv', (_req, res) => {
   res.setHeader('Content-Type', 'text/csv; charset=utf-8');
   res.setHeader('Content-Disposition', `attachment; filename="baekdu_manifest_${Date.now()}.csv"`);
@@ -313,48 +270,55 @@ router.get('/manifest.csv', (_req, res) => {
  * ZIP 내보내기 — 이미 방문지/미션 폴더 구조로 저장되어 있으므로 그대로 담습니다.
  * ?place=slug  ?mission=key  ?day=1  로 부분 내보내기 가능
  */
-router.get('/export.zip', (req, res) => {
-  const where = [];
-  const args = [];
-  if (req.query.place) { where.push('up.place_slug = ?'); args.push(String(req.query.place)); }
-  if (req.query.mission) { where.push('up.mission = ?'); args.push(String(req.query.mission)); }
-  if (req.query.day) { where.push('p.day = ?'); args.push(Number(req.query.day)); }
-  if (req.query.user) { where.push('up.user_id = ?'); args.push(Number(req.query.user)); }
-  const clause = where.length ? `WHERE ${where.join(' AND ')}` : '';
+router.get('/export.zip', async (req, res) => {
+  const user = Number(req.query.user) || 0;
+  const scope = ['mine', 'in', 'both'].includes(String(req.query.scope)) ? String(req.query.scope) : 'both';
 
-  const rows = db.prepare(`
-    SELECT up.file_path FROM uploads up JOIN places p ON p.slug = up.place_slug ${clause}
-  `).all(...args);
+  let rows;
+  let label;
+  if (user) {
+    // 사람으로 뽑을 때는 '올린 것 / 나온 것' 을 함께 볼 수 있어야 한다
+    rows = uploadsOf(user, scope);
+    label = db.prepare('SELECT name FROM users WHERE id = ?').get(user)?.name || `user${user}`;
+  } else {
+    const where = [];
+    const args = [];
+    if (req.query.place) { where.push('up.place_slug = ?'); args.push(String(req.query.place)); }
+    if (req.query.mission) { where.push('up.mission = ?'); args.push(String(req.query.mission)); }
+    if (req.query.day) { where.push('p.day = ?'); args.push(Number(req.query.day)); }
+    const clause = where.length ? `WHERE ${where.join(' AND ')}` : '';
+    rows = db.prepare(
+      `SELECT up.id, up.file_path FROM uploads up JOIN places p ON p.slug = up.place_slug ${clause}`
+    ).all(...args);
+    label = req.query.place || (req.query.day ? `${req.query.day}일차` : req.query.mission || '전체');
+  }
 
   if (!rows.length) return res.status(404).json({ error: '내보낼 자료가 없습니다.' });
 
-  const name = `baekdu_${req.query.place || req.query.day || 'all'}_${Date.now()}.zip`;
-  res.setHeader('Content-Type', 'application/zip');
-  res.setHeader('Content-Disposition', `attachment; filename="${name}"`);
-
-  const zip = archiver('zip', { zlib: { level: 0 } }); // 사진/영상은 이미 압축됨 → 저장만
-  zip.on('error', (err) => { console.error('[zip]', err); res.destroy(err); });
-  zip.pipe(res);
-
-  for (const r of rows) {
-    const abs = path.join(UPLOAD_DIR, r.file_path);
-    if (fs.existsSync(abs)) zip.file(abs, { name: r.file_path });
+  const started = await queueExport(() => streamZip(res, {
+    files: rows.map((r) => r.file_path),
+    zipName: `baekdu_${label}${user ? `_${SCOPE_LABEL[scope]}` : ''}.zip`,
+    manifestCsv: toCsv(manifestRows(user ? rows.map((r) => r.id) : null)),
+    readme: readmeText(),
+  }));
+  if (!started) {
+    res.status(503).json({ error: `내보내기가 밀려 있습니다(${queueDepth()}건). 잠시 후 다시 눌러주세요.` });
   }
-  zip.append(toCsv(manifestRows()), { name: '_manifest.csv' });
-  zip.append(
-    [
-      'ICCA 산악회 백두산 여행 사진/영상 아카이브',
-      '',
-      '폴더 구조: {일차}_{순서}_{방문지}/{미션}/{이름}_{촬영시각}.확장자',
-      '',
-      '미션 폴더:',
-      ...Object.entries(MISSION_FOLDER).map(([k, v]) => `  ${v}  ← ${MISSION_LABEL[k] || k}`),
-      '',
-      '_manifest.csv 에 업로더·함께 찍힌 사람·캡션이 모두 들어 있습니다.',
-    ].join('\r\n'),
-    { name: '_읽어주세요.txt' }
-  );
-  zip.finalize();
 });
+
+const SCOPE_LABEL = { mine: '올린것', in: '나온것', both: '전체' };
+
+function readmeText() {
+  return [
+    'ICCA 산악회 백두산 여행 사진/영상 아카이브',
+    '',
+    '폴더 구조: {일차}_{순서}_{방문지}/{미션}/{이름}_{촬영시각}.확장자',
+    '',
+    '미션 폴더:',
+    ...Object.entries(MISSION_FOLDER).map(([k, v]) => `  ${v}  ← ${MISSION_LABEL[k] || k}`),
+    '',
+    '_manifest.csv 에 업로더·함께 찍힌 사람·캡션이 모두 들어 있습니다.',
+  ].join('\r\n');
+}
 
 export default router;

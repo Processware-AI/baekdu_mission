@@ -6,6 +6,7 @@ import { UPLOAD_DIR, THUMB_DIR, ENTRY_DIR } from '../config.js';
 import { requireAuth } from '../middleware/auth.js';
 import { PLACES, CONQUER_KEYS, MEMBER_MISSION_KEYS } from '../data/places.js';
 import { makeThumb } from '../lib/thumb.js';
+import { queueExport, streamZip, queueDepth, uploadsOf, manifestRows, toCsv } from '../lib/export.js';
 import { leaderboard, groupBoard, badgesFor, userScore } from '../lib/scoring.js';
 
 const router = express.Router();
@@ -140,6 +141,38 @@ router.get('/me/entry-form/exists', (req, res) => {
   const ok = !!name && !/[\\/.]/.test(name) && fs.existsSync(path.join(ENTRY_DIR, `${name}.jpg`));
   res.setHeader('Cache-Control', 'no-store, private');
   res.json({ has: ok });
+});
+
+/**
+ * 내 사진 모두 받기.
+ *
+ * 운영진 내보내기와 같은 줄에 세워 한 번에 하나씩 만든다.
+ * 여행이 끝나면 여러 명이 동시에 누를 것이기 때문이다.
+ * 자기 것만 나가도록 사용자 id 는 세션에서만 가져온다.
+ */
+router.get('/me/export.zip', async (req, res) => {
+  const scope = ['mine', 'in', 'both'].includes(String(req.query.scope)) ? String(req.query.scope) : 'both';
+  const rows = uploadsOf(req.user.id, scope);
+  if (!rows.length) return res.status(404).json({ error: '아직 받을 자료가 없습니다.' });
+
+  const label = { mine: '내가올린', in: '내가나온', both: '내사진' }[scope];
+  const started = await queueExport(() => streamZip(res, {
+    files: rows.map((r) => r.file_path),
+    zipName: `백두산_${label}_${req.user.name}.zip`,
+    manifestCsv: toCsv(manifestRows(rows.map((r) => r.id))),
+  }));
+  if (!started) {
+    res.status(503).json({ error: `내보내기가 밀려 있습니다(${queueDepth()}건). 잠시 후 다시 눌러주세요.` });
+  }
+});
+
+/** 받을 자료가 몇 건인지 (버튼에 표시) */
+router.get('/me/export/count', (req, res) => {
+  res.json({
+    mine: uploadsOf(req.user.id, 'mine').length,
+    in: uploadsOf(req.user.id, 'in').length,
+    both: uploadsOf(req.user.id, 'both').length,
+  });
 });
 
 router.get('/me/summary', (req, res) => {

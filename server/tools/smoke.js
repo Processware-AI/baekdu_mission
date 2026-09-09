@@ -302,7 +302,28 @@ async function main() {
     ok(delMine.status === 200, '본인 자료는 삭제 가능');
     ok(!fs.existsSync(path.join(expected, files[0] || 'x')), '삭제 시 실제 파일도 제거');
 
+    console.log('\n▶ 사람별 내보내기');
+    await req('POST', '/api/auth/login', { json: { name: '박화서', password: '01087503934' } });
+    const cnt = await req('GET', '/api/me/export/count');
+    ok(cnt.status === 200 && cnt.data.both >= 1, `내 자료 건수 (올린 ${cnt.data.mine} · 나온 ${cnt.data.in})`);
+    ok(cnt.data.both <= cnt.data.mine + cnt.data.in, '올린 것과 나온 것이 겹치면 한 번만 센다');
+
+    const myZip = await req('GET', '/api/me/export.zip?scope=both');
+    ok(Buffer.isBuffer(myZip.data) && myZip.data.slice(0, 2).toString() === 'PK',
+      `내 사진 ZIP (${myZip.data.length} bytes)`);
+
+    await req('POST', '/api/auth/login', { json: { name: '손신기', password: '01037320154' } });
+    const otherCnt = await req('GET', '/api/me/export/count');
+    ok(otherCnt.data.mine !== cnt.data.mine || otherCnt.data.in !== cnt.data.in,
+      '사람마다 다른 자료가 잡힘');
+
+    await req('POST', '/api/auth/login', { json: { name: 'admin', password: 'testpw123' } });
+    const byUser = await req('GET', `/api/admin/export.zip?user=${손신기.id}&scope=in`);
+    ok(byUser.status === 200 || byUser.status === 404, '운영진 사람별 내보내기 응답');
+
     console.log('\n▶ 사용 현황');
+    // 화면 기록은 참가자로 남겨야 집계에 잡힌다 (운영진 이동은 빠진다)
+    await req('POST', '/api/auth/login', { json: { name: '박화서', password: '01087503934' } });
     await req('POST', '/api/activity', { json: { view: 'schedule' } });
     await req('POST', '/api/activity', { json: { view: 'gallery' } });
     const badView = await req('POST', '/api/activity', { json: { view: '<script>' } });

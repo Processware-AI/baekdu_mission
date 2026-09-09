@@ -12,6 +12,7 @@ export default async function renderMe(host) {
   const day3 = S.bundle.day3BusByGroup[u.group];
   const pending = await queueSize();
   const entry = await api.get('/api/me/entry-form/exists').catch(() => ({ has: false }));
+  const mine = await api.get('/api/me/export/count').catch(() => ({ mine: 0, in: 0, both: 0 }));
   const q = getQuality();
 
   host.innerHTML = `
@@ -87,6 +88,26 @@ export default async function renderMe(host) {
       </div>
     </section>` : ''}
 
+    ${mine.both ? `
+    <section class="card">
+      <h2>📥 내 사진 받기</h2>
+      <p class="small muted" style="margin:0 0 10px">
+        내가 올린 사진과 내가 찍힌 사진을 한 번에 받습니다. ZIP 파일로 저장됩니다.
+      </p>
+      <div class="field">
+        <select id="m-dl-scope">
+          <option value="both">전부 (${mine.both}건) — 내가 올린 것 + 내가 나온 것</option>
+          <option value="mine">내가 올린 것만 (${mine.mine}건)</option>
+          <option value="in">내가 나온 것만 (${mine.in}건)</option>
+        </select>
+      </div>
+      <button class="btn ghost block" style="margin-top:8px" id="m-dl">📥 ZIP으로 받기</button>
+      <div class="alert info" style="margin-top:10px"><div class="ic">📶</div><div>
+        <b>와이파이에서 받으세요</b>
+        <p>사진이 많으면 용량이 큽니다. 여러 분이 동시에 누르면 차례대로 처리되니
+        잠시 기다리셔도 정상입니다.</p></div></div>
+    </section>` : ''}
+
     <section class="card">
       <h2>⚙️ 업로드 설정</h2>
       <div class="field">
@@ -137,6 +158,11 @@ export default async function renderMe(host) {
   host.querySelector('#m-admin')?.addEventListener('click', () => { location.hash = '#/admin'; });
   host.querySelector('#m-pw').onclick = passwordSheet;
   host.querySelector('#m-entry')?.addEventListener('click', showEntryForm);
+  host.querySelector('#m-dl')?.addEventListener('click', () => {
+    const scope = host.querySelector('#m-dl-scope').value;
+    toast('준비합니다. 여러 분이 동시에 받으면 차례대로 처리됩니다…', '', 5000);
+    window.location.href = `/api/me/export.zip?scope=${scope}`;
+  });
   host.querySelector('#m-entry-save')?.addEventListener('click', (e) => saveEntryForm(e.currentTarget));
   host.querySelector('#m-out').onclick = async () => {
     if (!await confirmSheet('로그아웃', '다시 로그인하려면 이름과 비밀번호가 필요합니다.', '로그아웃')) return;

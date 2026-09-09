@@ -166,6 +166,7 @@ async function statsView(body, host) {
 // ── 내보내기 ──────────────────────────────────────────────────
 async function exportView(body) {
   const b = S.bundle;
+  const people = await api.get('/api/admin/participants').catch(() => []);
   body.innerHTML = `
     <section class="card">
       <h2>📦 사진 · 영상 내보내기</h2>
@@ -186,6 +187,19 @@ async function exportView(body) {
             ${[...b.missions, ...b.adminMissions].map((m) =>
               `<option value="mission=${m.key}">${m.emoji} ${esc(m.label)}</option>`).join('')}
           </optgroup>
+          <optgroup label="사람별">
+            ${people.map((u) => `<option value="user=${u.id}">👤 ${esc(u.name)}${
+              u.gi ? ` (${esc(u.gi)})` : ''}</option>`).join('')}
+          </optgroup>
+        </select>
+      </div>
+
+      <div class="field" id="x-scope-wrap" hidden>
+        <label>사람별로 받을 때</label>
+        <select id="x-who">
+          <option value="both">올린 것 + 나온 것 (그 사람의 여행 전부)</option>
+          <option value="mine">올린 것만</option>
+          <option value="in">나온 것만</option>
         </select>
       </div>
       <button class="btn primary block" style="margin-top:12px" id="x-zip">⬇ ZIP 내려받기</button>
@@ -213,10 +227,18 @@ async function exportView(body) {
       </ul>
     </section>`;
 
+  // 사람을 고를 때만 '올린 것 / 나온 것' 선택을 보여준다
+  const scopeSel = body.querySelector('#x-scope');
+  const whoWrap = body.querySelector('#x-scope-wrap');
+  const syncWho = () => { whoWrap.hidden = !scopeSel.value.startsWith('user='); };
+  scopeSel.onchange = syncWho;
+  syncWho();
+
   body.querySelector('#x-zip').onclick = () => {
-    const q = body.querySelector('#x-scope').value;
-    toast('ZIP을 준비합니다. 용량이 크면 시간이 걸립니다…', '', 4000);
-    window.location.href = `/api/admin/export.zip${q ? `?${q}` : ''}`;
+    const q = scopeSel.value;
+    const who = q.startsWith('user=') ? `&scope=${body.querySelector('#x-who').value}` : '';
+    toast('ZIP을 준비합니다. 여러 건이 몰리면 차례대로 처리됩니다…', '', 4500);
+    window.location.href = `/api/admin/export.zip${q ? `?${q}${who}` : ''}`;
   };
   body.querySelector('#x-csv').onclick = () => {
     window.location.href = '/api/admin/manifest.csv';
