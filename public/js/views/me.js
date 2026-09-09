@@ -1,6 +1,6 @@
 import { api } from '../api.js';
 import { S } from '../state.js';
-import { esc, num, toast, sheet, confirmSheet } from '../util.js';
+import { esc, num, toast, sheet, confirmSheet, download } from '../util.js';
 import { QUALITY, getQuality, setQuality, queueSize, runQueue } from '../upload.js';
 import { suspendRouting, cancelQueue } from '../app.js';
 
@@ -161,7 +161,7 @@ export default async function renderMe(host) {
   host.querySelector('#m-dl')?.addEventListener('click', () => {
     const scope = host.querySelector('#m-dl-scope').value;
     toast('준비합니다. 여러 분이 동시에 받으면 차례대로 처리됩니다…', '', 5000);
-    window.location.href = `/api/me/export.zip?scope=${scope}`;
+    download(`/api/me/export.zip?scope=${scope}`);
   });
   host.querySelector('#m-entry-save')?.addEventListener('click', (e) => saveEntryForm(e.currentTarget));
   host.querySelector('#m-out').onclick = async () => {

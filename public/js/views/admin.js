@@ -1,6 +1,6 @@
 import { api } from '../api.js';
 import { S } from '../state.js';
-import { esc, num, fmtBytes, toast, sheet, confirmSheet, relTime } from '../util.js';
+import { esc, num, fmtBytes, toast, sheet, confirmSheet, relTime, download } from '../util.js';
 import { openUploader } from './uploader.js';
 
 let tab = 'stats';
@@ -238,10 +238,10 @@ async function exportView(body) {
     const q = scopeSel.value;
     const who = q.startsWith('user=') ? `&scope=${body.querySelector('#x-who').value}` : '';
     toast('ZIP을 준비합니다. 여러 건이 몰리면 차례대로 처리됩니다…', '', 4500);
-    window.location.href = `/api/admin/export.zip${q ? `?${q}${who}` : ''}`;
+    download(`/api/admin/export.zip${q ? `?${q}${who}` : ''}`);
   };
   body.querySelector('#x-csv').onclick = () => {
-    window.location.href = '/api/admin/manifest.csv';
+    download('/api/admin/manifest.csv');
   };
 }
 

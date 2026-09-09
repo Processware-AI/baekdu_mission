@@ -126,3 +126,24 @@ export function confirmSheet(title, message, okLabel = '확인') {
     s.root.querySelector('[data-yes]').onclick = () => { done = true; resolve(true); s.close(); };
   });
 }
+
+/**
+ * 파일 내려받기.
+ *
+ * location.href 로 옮기면 화면이 통째로 그 주소로 넘어간다.
+ * 홈 화면에 추가해 앱처럼 쓰면(standalone) 주소창도 뒤로 가기 단추도 없어서,
+ * 파일을 받아 카톡으로 보내고 나면 앱으로 돌아올 길이 사라진다.
+ *
+ * 그래서 눈에 안 보이는 링크를 눌러 화면은 그대로 두고 파일만 받는다.
+ * 파일 이름은 서버가 보낸 것이 우선이라 여기서 정하지 않아도 된다.
+ */
+export function download(url) {
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = '';        // "이 주소로 이동" 이 아니라 "이 파일을 받아라"
+  a.rel = 'noopener';
+  a.style.display = 'none';
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => a.remove(), 1000);
+}
