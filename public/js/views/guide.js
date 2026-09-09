@@ -33,7 +33,8 @@ export default async function renderGuide(host) {
       </div></div>
       <div class="row"><div class="em">🛬</div><div class="t">
         <b>오는 날 · ${esc(b.shuttle.back.when)}</b>
-        <small>${esc(b.shuttle.back.detail)}</small>
+        <small>${esc(b.shuttle.back.where)}<br>${esc(b.shuttle.back.detail)}${
+          b.shuttle.back.car ? `<br>${esc(b.shuttle.back.car)}` : ''}</small>
       </div></div>
       <div class="alert info" style="margin-top:10px"><div class="ic">🚶</div>
         <div><b>개별이동자</b><p>${esc(b.shuttle.individual)}</p></div></div>
