@@ -112,7 +112,11 @@ async function main() {
     await page.click('#go-up');
     await page.waitForSelector('.sheet');
     ok(await page.locator('#u-place').isVisible(), '업로드 시트 — 방문지 선택');
-    ok((await page.locator('#u-missions .mtile').count()) === 6, '미션 타일 6개 (참가자)');
+    // 시트가 뜬 직후엔 아직 다 그려지지 않았을 수 있다. 개수가 맞을 때까지 기다린다.
+    const tiles = await page.waitForFunction(
+      () => document.querySelectorAll('#u-missions .mtile').length === 6, null, { timeout: 8000 },
+    ).then(() => 6).catch(async () => page.locator('#u-missions .mtile').count());
+    ok(tiles === 6, `미션 타일 6개 (참가자) — 실제 ${tiles}`);
 
     // 실제 파일 업로드
     await page.selectOption('#u-place', 'seopa-cheonji');
