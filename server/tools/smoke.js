@@ -320,6 +320,15 @@ async function main() {
     ok(members.join('|') === [...members].sort((a, b) => a.localeCompare(b, 'ko')).join('|'),
       '사람별 목록이 가나다 순');
     ok(act.data.people.slice(-1)[0]?.is_guide === 1, '가이드는 목록 뒤에 모임');
+
+    const one = act.data.people.find((p) => p.logins > 0);
+    const hist = await req('GET', `/api/admin/activity/${one.id}`);
+    ok(hist.status === 200 && hist.data.user.name === one.name, '사람별 기록 조회');
+    ok(hist.data.rows.length > 0 && hist.data.totals.logins > 0, '사람별 기록에 내용이 있음');
+    const none = act.data.people.find((p) => !p.logins);
+    const emptyHist = await req('GET', `/api/admin/activity/${none.id}`);
+    ok(emptyHist.status === 200 && emptyHist.data.rows.length === 0, '미접속자는 기록이 비어 있음');
+    ok((await req('GET', '/api/admin/activity/999999')).status === 404, '없는 사람은 404');
     const never = act.data.people.filter((p) => !p.logins);
     ok(never.length > 0 && never.every((p) => !p.lastSeen), '미접속자는 마지막 접속이 없음');
 

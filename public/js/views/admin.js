@@ -412,11 +412,12 @@ async function usageView(body) {
 
     <section class="card">
       <h2>👥 사람별 (${d.people.length}명)</h2>
+      <p class="small muted" style="margin:0 0 8px">이름을 누르면 그 사람의 기록을 볼 수 있습니다.</p>
       <div class="tbl-scroll">
         <table class="usage">
           <thead><tr><th>이름</th><th>로그인</th><th>화면</th><th>올림</th><th>마지막 접속</th></tr></thead>
           <tbody>
-            ${d.people.map((p) => `<tr class="${p.logins ? '' : 'off'}">
+            ${d.people.map((p) => `<tr class="${p.logins ? '' : 'off'}" data-u="${p.id}">
               <td>${esc(p.name)}${p.is_guide ? ' <span class="chip accent">가이드</span>' : ''}</td>
               <td>${p.logins || '-'}</td>
               <td>${p.views || '-'}</td>
@@ -429,7 +430,7 @@ async function usageView(body) {
     </section>
 
     <section class="card">
-      <h2>🕘 최근 기록</h2>
+      <h2>🕘 최근 기록 <span class="more">최신 ${d.recent.length}건</span></h2>
       ${d.recent.length ? `
         <div style="display:grid;gap:7px">
           ${d.recent.map((r) => `<div class="row" style="padding:6px 0">
@@ -464,6 +465,10 @@ async function usageView(body) {
       로그인 시각과 화면 이동만 남깁니다. 무엇을 눌렀는지, 무엇을 보았는지는 기록하지 않습니다.
     </p>`;
 
+  body.querySelectorAll('tr[data-u]').forEach((tr) => {
+    tr.onclick = () => personSheet(Number(tr.dataset.u));
+  });
+
   const input = body.querySelector('#u-confirm');
   const go = body.querySelector('#u-go');
   const sync = () => { go.disabled = input.value.trim() !== RESET_PHRASE; };
@@ -490,4 +495,51 @@ async function usageView(body) {
       sync();
     }
   };
+}
+
+/** 한 사람의 사용 기록 — 이 분이 앱을 제대로 쓰고 계신지 보려는 것이다 */
+async function personSheet(userId) {
+  const s = sheet({ title: '사용 기록', body: '<div class="sk"></div>' });
+  let d;
+  try {
+    d = await api.get(`/api/admin/activity/${userId}`);
+  } catch (e) {
+    s.body.innerHTML = `<p class="small">${esc(e.message || '불러오지 못했습니다.')}</p>`;
+    return;
+  }
+  const { user: u, totals: t } = d;
+  s.root.querySelector('.sh-head b').textContent = `${u.name} · 사용 기록`;
+  s.body.innerHTML = `
+    <div class="kv">
+      <dt>소속</dt><dd>${u.is_guide ? '가이드' : `${esc(u.gi || '')}${u.grp ? ` · ${u.grp}조` : ''}${u.bus ? ` · ${u.bus}호차` : ''}`}</dd>
+      <dt>로그인</dt><dd>${t.logins || 0}회</dd>
+      <dt>화면 열람</dt><dd>${num(t.views || 0)}회</dd>
+      <dt>올린 자료</dt><dd>${t.uploads || 0}건</dd>
+      <dt>처음 접속</dt><dd>${t.firstSeen ? relTime(t.firstSeen) : '없음'}</dd>
+      <dt>마지막 접속</dt><dd>${t.lastSeen ? relTime(t.lastSeen) : '없음'}</dd>
+    </div>
+
+    ${d.byView.length ? `
+      <div>
+        <div class="section-title" style="margin-bottom:8px">화면별</div>
+        <div class="chips">
+          ${d.byView.map((v) => `<span class="chip">${esc(VIEW_LABEL[v.view] || v.view)} ${v.cnt}</span>`).join('')}
+        </div>
+      </div>` : ''}
+
+    <div>
+      <div class="section-title" style="margin-bottom:8px">기록 ${
+        d.rows.length >= 300 ? '(최근 300건)' : `${d.rows.length}건`}</div>
+      ${d.rows.length ? `
+        <div style="display:grid;gap:6px">
+          ${d.rows.map((r) => `<div class="row" style="padding:5px 0">
+            <div class="em">${r.kind === 'login' ? '🔑' : '👀'}</div>
+            <div class="t"><b>${r.kind === 'login' ? '로그인' : esc(VIEW_LABEL[r.detail] || r.detail || '')}</b>
+              <small>${esc(r.created_at.slice(5, 16))}</small></div>
+            <span class="muted small">${relTime(r.created_at)}</span>
+          </div>`).join('')}
+        </div>`
+        : `<div class="empty"><div class="e">🔕</div><b>아직 한 번도 들어오지 않았습니다</b>
+             <p>출발 전에 개별로 알려주세요.</p></div>`}
+    </div>`;
 }

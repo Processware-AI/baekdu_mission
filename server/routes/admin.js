@@ -82,6 +82,35 @@ router.post('/reset-uploads', (req, res) => {
   res.json({ ok: true, uploads: before.cnt, bytes: before.bytes, events });
 });
 
+/** 한 사람의 사용 기록. 사람별 표에서 이름을 눌렀을 때 쓴다. */
+router.get('/activity/:userId', (req, res) => {
+  const id = Number(req.params.userId);
+  const user = db.prepare(
+    'SELECT id, name, gi, grp, bus, is_guide FROM users WHERE id = ? AND is_admin = 0'
+  ).get(id);
+  if (!user) return res.status(404).json({ error: '찾을 수 없습니다.' });
+
+  const rows = db.prepare(
+    `SELECT kind, detail, created_at FROM activity
+      WHERE user_id = ? ORDER BY id DESC LIMIT 300`
+  ).all(id);
+  const byView = db.prepare(
+    `SELECT detail AS view, COUNT(*) AS cnt FROM activity
+      WHERE user_id = ? AND kind='view' GROUP BY detail ORDER BY cnt DESC`
+  ).all(id);
+  const totals = db.prepare(`
+    SELECT
+      SUM(CASE WHEN kind='login' THEN 1 ELSE 0 END) AS logins,
+      SUM(CASE WHEN kind='view'  THEN 1 ELSE 0 END) AS views,
+      MIN(created_at) AS firstSeen,
+      MAX(created_at) AS lastSeen
+    FROM activity WHERE user_id = ?
+  `).get(id);
+  const uploads = db.prepare('SELECT COUNT(*) AS c FROM uploads WHERE user_id = ?').get(id).c;
+
+  res.json({ user, totals: { ...totals, uploads }, byView, rows });
+});
+
 /**
  * 사용 기록만 지우기.
  *
