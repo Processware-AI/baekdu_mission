@@ -127,23 +127,98 @@ export function confirmSheet(title, message, okLabel = '확인') {
   });
 }
 
+/** 아이폰·아이패드인지 (아이패드는 맥으로 보고하므로 터치 여부까지 본다) */
+export function isIOS() {
+  const ua = navigator.userAgent || '';
+  return /iPhone|iPad|iPod/.test(ua)
+    || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
+}
+
 /**
- * 파일 내려받기.
+ * 파일 받기 — 화면은 그대로 두고.
  *
- * location.href 로 옮기면 화면이 통째로 그 주소로 넘어간다.
- * 홈 화면에 추가해 앱처럼 쓰면(standalone) 주소창도 뒤로 가기 단추도 없어서,
- * 파일을 받아 카톡으로 보내고 나면 앱으로 돌아올 길이 사라진다.
+ * 홈 화면에 추가해 앱처럼 쓰면 주소창도 뒤로 가기 단추도 없다. 그 상태에서
+ * 파일 주소로 화면을 옮기면(location.href 든 a[download] 든) 돌아올 길이 사라진다.
+ * 그래서 주소를 여는 대신 내용을 직접 받아 두고, 그 다음에 넘긴다.
  *
- * 그래서 눈에 안 보이는 링크를 눌러 화면은 그대로 두고 파일만 받는다.
- * 파일 이름은 서버가 보낸 것이 우선이라 여기서 정하지 않아도 된다.
+ *  - 아이폰: 공유 시트. 카톡·파일·사진으로 바로 보낼 수 있고 화면은 그대로다.
+ *  - 그 밖: 받아둔 내용으로 만든 링크를 눌러 저장한다.
+ *
+ * @param {HTMLElement} [btn] 진행 상황을 보여줄 버튼 (받는 동안 잠긴다)
+ * @returns {Promise<boolean>} 넘기기까지 마쳤으면 true
  */
-export function download(url) {
+export async function saveFile(url, fallbackName, btn) {
+  const label = btn?.textContent;
+  const show = (t) => { if (btn) btn.textContent = t; };
+  const reset = () => { if (btn) { btn.disabled = false; btn.textContent = label; } };
+  if (btn) btn.disabled = true;
+  show('준비 중…');
+
+  let blob, name = fallbackName;
+  try {
+    const res = await fetch(url, { credentials: 'same-origin' });
+    if (!res.ok) {
+      let msg = '받지 못했습니다. 잠시 뒤 다시 눌러주세요.';
+      try { msg = (await res.json()).error || msg; } catch { /* 본문이 없을 수도 있다 */ }
+      throw new Error(msg);
+    }
+    name = nameFromHeader(res.headers.get('Content-Disposition')) || fallbackName;
+    blob = await readAll(res, show);
+  } catch (e) {
+    toast(e.message || '받지 못했습니다.', 'err', 5000);
+    reset();
+    return false;
+  }
+  reset();
+
+  const file = new File([blob], name, { type: blob.type || 'application/octet-stream' });
+
+  // 공유 시트가 뜨는 동안에도 앱은 그대로 살아 있다. 취소하면 아무 일도 없다.
+  if (isIOS() && navigator.canShare?.({ files: [file] })) {
+    try {
+      await navigator.share({ files: [file], title: name });
+      return true;
+    } catch (e) {
+      if (e?.name === 'AbortError') return false;   // 사용자가 닫음
+      // 그 밖의 이유면 아래 저장으로 넘어간다
+    }
+  }
+
+  const obj = URL.createObjectURL(blob);
   const a = document.createElement('a');
-  a.href = url;
-  a.download = '';        // "이 주소로 이동" 이 아니라 "이 파일을 받아라"
-  a.rel = 'noopener';
+  a.href = obj;
+  a.download = name;
   a.style.display = 'none';
-  document.body.appendChild(a);
+  document.body.append(a);
   a.click();
-  setTimeout(() => a.remove(), 1000);
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(obj), 10000);
+  toast('저장했습니다. <b>파일</b> 앱의 <b>다운로드</b>에 들어 있습니다.', 'ok', 5000);
+  return true;
+}
+
+/** 받는 동안 몇 MB 왔는지 보여준다. ZIP 은 만들면서 보내므로 전체 크기를 미리 알 수 없다. */
+async function readAll(res, show) {
+  if (!res.body?.getReader) return res.blob();
+  const reader = res.body.getReader();
+  const chunks = [];
+  let got = 0, shown = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    chunks.push(value);
+    got += value.length;
+    if (got - shown > 1048576) { shown = got; show(`받는 중 ${Math.round(got / 1048576)}MB`); }
+  }
+  return new Blob(chunks, { type: res.headers.get('Content-Type') || '' });
+}
+
+/** Content-Disposition 에서 파일 이름 꺼내기 (한글이라 filename* 쪽을 먼저 본다) */
+function nameFromHeader(cd) {
+  if (!cd) return null;
+  const star = /filename\*=UTF-8''([^;]+)/i.exec(cd);
+  if (star) { try { return decodeURIComponent(star[1]); } catch { /* 깨졌으면 아래로 */ } }
+  const plain = /filename="([^"]+)"/i.exec(cd);
+  if (plain) { try { return decodeURIComponent(plain[1]); } catch { return plain[1]; } }
+  return null;
 }

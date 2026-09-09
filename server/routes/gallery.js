@@ -6,7 +6,7 @@ import { UPLOAD_DIR, THUMB_DIR, ENTRY_DIR } from '../config.js';
 import { requireAuth } from '../middleware/auth.js';
 import { PLACES, CONQUER_KEYS, MEMBER_MISSION_KEYS } from '../data/places.js';
 import { makeThumb } from '../lib/thumb.js';
-import { queueExport, streamZip, queueDepth, uploadsOf, manifestRows, toCsv } from '../lib/export.js';
+import { queueExport, streamZip, queueDepth, uploadsOf, manifestRows, totalBytes, toCsv } from '../lib/export.js';
 import { leaderboard, groupBoard, badgesFor, userScore } from '../lib/scoring.js';
 
 const router = express.Router();
@@ -168,11 +168,14 @@ router.get('/me/export.zip', async (req, res) => {
 
 /** 받을 자료가 몇 건인지 (버튼에 표시) */
 router.get('/me/export/count', (req, res) => {
-  res.json({
-    mine: uploadsOf(req.user.id, 'mine').length,
-    in: uploadsOf(req.user.id, 'in').length,
-    both: uploadsOf(req.user.id, 'both').length,
-  });
+  // 건수와 함께 용량도 준다 — 휴대폰으로 받기 전에 얼마나 큰지 보여주려고.
+  const out = {};
+  for (const scope of ['mine', 'in', 'both']) {
+    const rows = uploadsOf(req.user.id, scope);
+    out[scope] = rows.length;
+    out[`${scope}Bytes`] = totalBytes(rows.map((r) => r.id));
+  }
+  res.json(out);
 });
 
 router.get('/me/summary', (req, res) => {

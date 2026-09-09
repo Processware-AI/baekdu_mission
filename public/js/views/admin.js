@@ -1,6 +1,6 @@
 import { api } from '../api.js';
 import { S } from '../state.js';
-import { esc, num, fmtBytes, toast, sheet, confirmSheet, relTime, download } from '../util.js';
+import { esc, num, fmtBytes, toast, sheet, confirmSheet, relTime, saveFile } from '../util.js';
 import { openUploader } from './uploader.js';
 
 let tab = 'stats';
@@ -234,14 +234,14 @@ async function exportView(body) {
   scopeSel.onchange = syncWho;
   syncWho();
 
-  body.querySelector('#x-zip').onclick = () => {
+  body.querySelector('#x-zip').onclick = (e) => {
     const q = scopeSel.value;
     const who = q.startsWith('user=') ? `&scope=${body.querySelector('#x-who').value}` : '';
     toast('ZIP을 준비합니다. 여러 건이 몰리면 차례대로 처리됩니다…', '', 4500);
-    download(`/api/admin/export.zip${q ? `?${q}${who}` : ''}`);
+    saveFile(`/api/admin/export.zip${q ? `?${q}${who}` : ''}`, 'baekdu_export.zip', e.currentTarget);
   };
-  body.querySelector('#x-csv').onclick = () => {
-    download('/api/admin/manifest.csv');
+  body.querySelector('#x-csv').onclick = (e) => {
+    saveFile('/api/admin/manifest.csv', 'baekdu_manifest.csv', e.currentTarget);
   };
 }
 

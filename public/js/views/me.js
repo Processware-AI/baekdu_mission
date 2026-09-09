@@ -1,6 +1,6 @@
 import { api } from '../api.js';
 import { S } from '../state.js';
-import { esc, num, toast, sheet, confirmSheet, download } from '../util.js';
+import { esc, num, fmtBytes, toast, sheet, confirmSheet, saveFile, isIOS } from '../util.js';
 import { QUALITY, getQuality, setQuality, queueSize, runQueue } from '../upload.js';
 import { suspendRouting, cancelQueue } from '../app.js';
 
@@ -92,13 +92,14 @@ export default async function renderMe(host) {
     <section class="card">
       <h2>📥 내 사진 받기</h2>
       <p class="small muted" style="margin:0 0 10px">
-        내가 올린 사진과 내가 찍힌 사진을 한 번에 받습니다. ZIP 파일로 저장됩니다.
+        내가 올린 사진과 내가 찍힌 사진을 ZIP 하나로 묶어 드립니다.
+        아이폰은 공유 창이 떠서 <b>카톡·파일 앱</b>으로 바로 보낼 수 있습니다.
       </p>
       <div class="field">
         <select id="m-dl-scope">
-          <option value="both">전부 (${mine.both}건) — 내가 올린 것 + 내가 나온 것</option>
-          <option value="mine">내가 올린 것만 (${mine.mine}건)</option>
-          <option value="in">내가 나온 것만 (${mine.in}건)</option>
+          <option value="both">전부 — ${mine.both}건${mine.both ? ` · ${fmtBytes(mine.bothBytes)}` : ''}</option>
+          <option value="mine">내가 올린 것만 — ${mine.mine}건${mine.mine ? ` · ${fmtBytes(mine.mineBytes)}` : ''}</option>
+          <option value="in">내가 나온 것만 — ${mine.in}건${mine.in ? ` · ${fmtBytes(mine.inBytes)}` : ''}</option>
         </select>
       </div>
       <button class="btn ghost block" style="margin-top:8px" id="m-dl">📥 ZIP으로 받기</button>
@@ -158,10 +159,10 @@ export default async function renderMe(host) {
   host.querySelector('#m-admin')?.addEventListener('click', () => { location.hash = '#/admin'; });
   host.querySelector('#m-pw').onclick = passwordSheet;
   host.querySelector('#m-entry')?.addEventListener('click', showEntryForm);
-  host.querySelector('#m-dl')?.addEventListener('click', () => {
+  host.querySelector('#m-dl')?.addEventListener('click', (e) => {
     const scope = host.querySelector('#m-dl-scope').value;
     toast('준비합니다. 여러 분이 동시에 받으면 차례대로 처리됩니다…', '', 5000);
-    download(`/api/me/export.zip?scope=${scope}`);
+    saveFile(`/api/me/export.zip?scope=${scope}`, `백두산_내사진_${S.user.name}.zip`, e.currentTarget);
   });
   host.querySelector('#m-entry-save')?.addEventListener('click', (e) => saveEntryForm(e.currentTarget));
   host.querySelector('#m-out').onclick = async () => {
@@ -289,9 +290,3 @@ async function saveEntryForm(btn) {
   }
 }
 
-/** 아이폰·아이패드인지 (아이패드는 맥으로 보고하므로 터치 여부까지 본다) */
-function isIOS() {
-  const ua = navigator.userAgent || '';
-  return /iPhone|iPad|iPod/.test(ua)
-    || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
-}

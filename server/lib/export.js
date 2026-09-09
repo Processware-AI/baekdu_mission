@@ -83,6 +83,14 @@ export function uploadsOf(userId, scope = 'both') {
   return db.prepare(`${mine} UNION ${appeared} ORDER BY id`).all(userId, userId);
 }
 
+/** 고른 자료의 총 용량(바이트). 받기 전에 얼마나 큰지 알려주려고 쓴다. */
+export function totalBytes(ids) {
+  if (!ids.length) return 0;
+  return db.prepare(
+    `SELECT COALESCE(SUM(bytes), 0) AS n FROM uploads WHERE id IN (${ids.map(() => '?').join(',')})`
+  ).get(...ids).n;
+}
+
 /** @param {number[]|null} ids 주면 그 자료만. 개인에게 보낼 때는 남의 것이 섞이면 안 된다. */
 export function manifestRows(ids = null) {
   const clause = ids ? `WHERE up.id IN (${ids.map(() => '?').join(',')})` : '';
