@@ -223,6 +223,11 @@ function loginScreen() {
 
 // ── 시작 ──────────────────────────────────────────────────────
 async function start() {
+  // 아이폰은 문서에 터치 처리가 하나도 없으면 :active 를 아예 적용하지 않는다.
+  // 그래서 버튼을 눌러도 눌린 표시가 안 나 "안 눌렸나?" 싶어 두 번 누르게 된다.
+  // 빈 처리라도 하나 달아두면 눌린 순간 바로 표시가 난다.
+  document.addEventListener('touchstart', () => {}, { passive: true });
+
   await loadBundle();
   await refreshProgress().catch(() => {});
   shell();

@@ -29,6 +29,11 @@
 }
 
 *{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
+/* 아이폰은 두 번 톡톡 치면 확대하는 동작이 있어, 누를 수 있는 것을 누르면
+   "혹시 두 번째가 오나" 하고 잠깐 기다렸다가 반응한다. 그동안 아무 표시도
+   없으니 안 눌린 줄 알고 한 번 더 누르게 된다. 확대는 화면 아무 데서나 되니
+   버튼에서는 꺼서 바로 반응하게 한다. */
+button, a, select, input, label, [role="button"], .tile, .row{touch-action:manipulation}
 html,body{margin:0;padding:0}
 body{
   font-family:var(--font); background:var(--bg); color:var(--text);
@@ -163,8 +168,9 @@ a{color:var(--accent); text-decoration:none}
 /* ── 버튼 ─────────────────────────────────────────────────────── */
 .btn{display:inline-flex; align-items:center; justify-content:center; gap:7px;
   padding:12px 16px; border-radius:12px; border:1px solid var(--line); background:var(--card);
-  font-weight:700; font-size:14px; cursor:pointer; transition:transform .08s}
-.btn:active{transform:scale(.975)}
+  font-weight:700; font-size:14px; cursor:pointer; transition:transform .08s, filter .08s}
+/* 눌린 것이 눈에 보여야 한다 — 반응이 없다고 느껴 두 번 누르지 않도록 */
+.btn:active{transform:scale(.975); filter:brightness(.92)}
 .btn.primary{background:linear-gradient(135deg,var(--accent),#0a7ba8); color:#fff; border-color:transparent;
   box-shadow:0 6px 16px -8px var(--accent)}
 .btn.teal{background:var(--teal); color:#fff; border-color:transparent}
