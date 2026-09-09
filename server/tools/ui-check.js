@@ -13,8 +13,14 @@ const TEST_DIR = path.join(ROOT, 'data-uitest');
 const SHOTS = path.join(ROOT, '.shots');
 const PORT = 3998;
 const BASE = `http://127.0.0.1:${PORT}`;
-const EXE = process.env.CHROME_EXE
-  || path.join(process.env.LOCALAPPDATA || '', 'ms-playwright/chromium-1223/chrome-win64/chrome.exe');
+// 시스템에 깔린 크롬을 그대로 쓴다 (playwright 브라우저를 따로 받지 않는다).
+// 다른 곳에 있으면 CHROME_EXE 로 지정한다.
+const CHROME = {
+  darwin: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+  win32: path.join(process.env.LOCALAPPDATA || '', 'ms-playwright/chromium-1223/chrome-win64/chrome.exe'),
+  linux: '/usr/bin/google-chrome',
+};
+const EXE = process.env.CHROME_EXE || CHROME[process.platform] || CHROME.linux;
 
 let pass = 0, fail = 0;
 const ok = (c, label, extra = '') => {
