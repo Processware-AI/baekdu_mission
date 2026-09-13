@@ -1,6 +1,6 @@
 import { api } from '../api.js';
 import { S } from '../state.js';
-import { esc, num, fmtBytes, toast, sheet, confirmSheet, relTime, saveFile } from '../util.js';
+import { esc, num, fmtBytes, toast, sheet, confirmSheet, relTime, saveFile, keepStrips } from '../util.js';
 import { openUploader } from './uploader.js';
 
 let tab = 'stats';
@@ -26,6 +26,7 @@ export default async function renderAdmin(host) {
   host.querySelectorAll('#a-tab button').forEach((b) => {
     b.onclick = () => { tab = b.dataset.v; renderAdmin(host); };
   });
+  keepStrips(host);
 
   const body = host.querySelector('#a-body');
   body.innerHTML = '<div class="card"><div class="sk"></div></div>';

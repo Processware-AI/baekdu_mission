@@ -1,6 +1,6 @@
 import { api } from '../api.js';
 import { S } from '../state.js';
-import { esc, num, relTime } from '../util.js';
+import { esc, num, relTime, keepStrips } from '../util.js';
 
 let tab = 'overall';
 
@@ -30,6 +30,7 @@ export default async function renderRank(host) {
   host.querySelectorAll('#r-tab button').forEach((b) => {
     b.onclick = () => { tab = b.dataset.v; renderRank(host); };
   });
+  keepStrips(host);
 
   const body = host.querySelector('#r-body');
 

@@ -1,6 +1,6 @@
 import { api } from '../api.js';
 import { S, missionMeta, refreshProgress } from '../state.js';
-import { esc, el, relTime, fmtBytes, toast, confirmSheet } from '../util.js';
+import { esc, el, relTime, fmtBytes, toast, confirmSheet, keepStrips } from '../util.js';
 import { openUploader } from './uploader.js';
 
 const F = { scope: 'all', place: '', mission: '', page: 1 };
@@ -51,6 +51,7 @@ export default async function renderGallery(host) {
   host.querySelector('#f-place').onchange = (e) => {
     F.place = e.target.value; F.page = 1; renderGallery(host);
   };
+  keepStrips(host);
 
   await load(host, true);
 }
