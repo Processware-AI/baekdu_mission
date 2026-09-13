@@ -24,6 +24,11 @@ export class SqliteStore extends Store {
     try { this.gc_.run(Date.now()); } catch { /* ignore */ }
   }
 
+  /** 로그인 상태 전부 지우기 (서버를 다시 켤 때) */
+  clearAll() {
+    try { return db.prepare('DELETE FROM sessions').run().changes; } catch { return 0; }
+  }
+
   expiryOf(sess) {
     const ms = sess?.cookie?.maxAge ?? 1000 * 60 * 60 * 24 * 30;
     return Date.now() + ms;

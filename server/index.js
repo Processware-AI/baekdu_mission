@@ -24,10 +24,23 @@ app.disable('x-powered-by');
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: false, limit: '1mb' }));
 
+/**
+ * 로그인 상태는 데이터베이스에 남아 서버를 다시 켜도 그대로 이어진다.
+ * 다시 켰다는 것은 무언가 손봤다는 뜻이라, 낡은 화면을 켜둔 채로 쓰는 일이
+ * 없도록 모두 로그인 화면부터 다시 시작하게 한다.
+ * 고칠 것만 급히 고치고 다시 켜야 할 때는 .env 에 KEEP_SESSIONS=1 을 두면
+ * 로그인 상태가 유지된다.
+ */
+const sessionStore = new SqliteStore();
+if (process.env.KEEP_SESSIONS !== '1') {
+  const n = sessionStore.clearAll();
+  if (n) console.log(`  ↻ 로그인 상태 ${n}건을 지웠습니다 — 모두 다시 로그인해야 합니다`);
+}
+
 app.use(session({
   name: 'baekdu.sid',
   secret: SESSION_SECRET,
-  store: new SqliteStore(),
+  store: sessionStore,
   resave: false,
   saveUninitialized: false,
   rolling: true,
