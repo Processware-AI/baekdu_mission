@@ -1,6 +1,6 @@
 import { api } from '../api.js';
 import { S } from '../state.js';
-import { esc, num, fmtBytes, toast, sheet, confirmSheet, relTime, saveFile, keepStrips } from '../util.js';
+import { esc, num, fmtBytes, toast, sheet, confirmSheet, relTime, saveFile } from '../util.js';
 import { openUploader } from './uploader.js';
 
 let tab = 'stats';
@@ -35,8 +35,6 @@ export default async function renderAdmin(host) {
       showTab(host);
     };
   });
-  keepStrips(host);   // 다른 화면에 갔다 돌아왔을 때만 위치를 되살린다
-
   await showTab(host);
 }
 

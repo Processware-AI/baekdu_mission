@@ -1,6 +1,6 @@
 import { api } from '../api.js';
 import { S } from '../state.js';
-import { esc, num, relTime, keepStrips } from '../util.js';
+import { esc, num, relTime } from '../util.js';
 
 let tab = 'overall';
 
@@ -18,7 +18,7 @@ export default async function renderRank(host) {
       <div class="dates">${data.overall.length}명 중 · 업로드 ${me.uploads}장 · 방문지 ${me.places}곳</div>
     </section>` : ''}
 
-    <div class="filters" id="r-tab">
+    <div class="filters wrap" id="r-tab">
       <button data-v="overall" class="${tab === 'overall' ? 'on' : ''}">🏆 개인전</button>
       <button data-v="group" class="${tab === 'group' ? 'on' : ''}">🚩 조별전</button>
       <button data-v="badge" class="${tab === 'badge' ? 'on' : ''}">🏅 배지</button>
@@ -30,7 +30,6 @@ export default async function renderRank(host) {
   host.querySelectorAll('#r-tab button').forEach((b) => {
     b.onclick = () => { tab = b.dataset.v; renderRank(host); };
   });
-  keepStrips(host);
 
   const body = host.querySelector('#r-body');
 
