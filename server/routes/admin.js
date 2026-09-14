@@ -100,7 +100,9 @@ router.get('/activity/:userId', (req, res) => {
   ).all(id);
   const totals = db.prepare(`
     SELECT
-      SUM(CASE WHEN kind='login' THEN 1 ELSE 0 END) AS logins,
+      -- 화면 기록이 있으면 최소 1회 — 목록과 같은 기준으로 센다
+      MAX(SUM(CASE WHEN kind='login' THEN 1 ELSE 0 END),
+          CASE WHEN SUM(CASE WHEN kind='view' THEN 1 ELSE 0 END) > 0 THEN 1 ELSE 0 END) AS logins,
       SUM(CASE WHEN kind='view'  THEN 1 ELSE 0 END) AS views,
       MIN(created_at) AS firstSeen,
       MAX(created_at) AS lastSeen
@@ -135,14 +137,27 @@ router.post('/reset-activity', (req, res) => {
  * 출발 전에 "아직 못 들어오신 분" 을 찾아 개별로 챙기려는 용도다.
  */
 router.get('/activity', (_req, res) => {
+  /*
+   * 화면을 본 기록이 있으면 들어온 것으로 친다.
+   *
+   * 로그인 기록은 실제로 이름·비밀번호를 넣은 순간에만 남는다. 한 번 들어오면
+   * 로그인 상태가 오래 이어지므로, 매일 앱을 열어 쓰는 사람도 로그인 기록은
+   * 처음 한 건뿐이다. 예전에는 서버를 다시 켜도 그 상태가 이어져서, 기록을
+   * 지운 뒤로 로그인 기록이 아예 없는데 화면 기록만 쌓인 사람이 생겼다.
+   * 그 사람들이 '아직 안 들어오신 분' 에 잡혀 사람별 기록과 어긋났다.
+   * 화면을 봤다면 들어온 것이니 최소 1회로 센다.
+   */
   const totals = db.prepare(`
     SELECT
       (SELECT COUNT(*) FROM users WHERE is_admin=0 AND is_guide=0) AS members,
       -- 접속률은 참가자 기준이라 운영진·가이드는 뺀다
       (SELECT COUNT(DISTINCT a.user_id) FROM activity a JOIN users u ON u.id=a.user_id
-        WHERE a.kind='login' AND u.is_admin=0 AND u.is_guide=0) AS loggedIn,
-      (SELECT COUNT(*) FROM activity a JOIN users u ON u.id=a.user_id
-        WHERE a.kind='login' AND u.is_admin=0) AS logins,
+        WHERE a.kind IN ('login','view') AND u.is_admin=0 AND u.is_guide=0) AS loggedIn,
+      (SELECT COALESCE(SUM(n),0) FROM (
+        SELECT MAX(SUM(CASE WHEN a.kind='login' THEN 1 ELSE 0 END),
+                   CASE WHEN SUM(CASE WHEN a.kind='view' THEN 1 ELSE 0 END) > 0 THEN 1 ELSE 0 END) AS n
+          FROM activity a JOIN users u ON u.id=a.user_id
+         WHERE u.is_admin=0 GROUP BY a.user_id)) AS logins,
       (SELECT COUNT(*) FROM activity a JOIN users u ON u.id=a.user_id
         WHERE a.kind='view' AND u.is_admin=0) AS views
   `).get();
@@ -159,7 +174,9 @@ router.get('/activity', (_req, res) => {
   // 사람별 요약 (참가자·가이드 모두. 운영진은 뺀다)
   const people = db.prepare(`
     SELECT u.id, u.name, u.gi, u.grp, u.is_guide, u.pw_changed,
-           SUM(CASE WHEN a.kind='login' THEN 1 ELSE 0 END) AS logins,
+           -- 화면 기록이 있으면 최소 1회 (위 설명 참고)
+           MAX(SUM(CASE WHEN a.kind='login' THEN 1 ELSE 0 END),
+               CASE WHEN SUM(CASE WHEN a.kind='view' THEN 1 ELSE 0 END) > 0 THEN 1 ELSE 0 END) AS logins,
            SUM(CASE WHEN a.kind='view'  THEN 1 ELSE 0 END) AS views,
            MAX(a.created_at) AS lastSeen,
            (SELECT COUNT(*) FROM uploads up WHERE up.user_id = u.id) AS uploads
