@@ -237,9 +237,15 @@ const stripPos = new Map();
 
 export function keepStrips(root) {
   root.querySelectorAll('.filters[id]').forEach((strip) => {
-    const saved = stripPos.get(strip.id);
-    if (saved != null) strip.scrollLeft = saved;
-    showActiveChip(strip);
+    const put = () => {
+      const saved = stripPos.get(strip.id);
+      if (saved != null && strip.scrollWidth > strip.clientWidth) strip.scrollLeft = saved;
+      showActiveChip(strip);
+    };
+    put();
+    // 이 순간에는 아직 자리가 안 잡혀 있을 수 있다(폭이 0이면 넘길 곳도 없다).
+    // 한 번 그려진 뒤 다시 맞춘다.
+    requestAnimationFrame(put);
     strip.addEventListener('scroll', () => stripPos.set(strip.id, strip.scrollLeft), { passive: true });
   });
 }

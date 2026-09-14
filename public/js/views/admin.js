@@ -23,11 +23,25 @@ export default async function renderAdmin(host) {
     </div>
     <div id="a-body"></div>`;
 
-  host.querySelectorAll('#a-tab button').forEach((b) => {
-    b.onclick = () => { tab = b.dataset.v; renderAdmin(host); };
+  // 칸을 눌러도 칸막이는 다시 만들지 않고 내용만 바꾼다.
+  // 다시 만들면 넘겨둔 위치가 처음으로 돌아가, 뒤쪽 칸(사용현황·초기화)을
+  // 누른 사람은 방금 누른 칸을 화면에서 놓친다.
+  const strip = host.querySelector('#a-tab');
+  strip.querySelectorAll('button').forEach((b) => {
+    b.onclick = () => {
+      if (b.dataset.v === tab) return;
+      tab = b.dataset.v;
+      strip.querySelectorAll('button').forEach((x) => x.classList.toggle('on', x.dataset.v === tab));
+      showTab(host);
+    };
   });
-  keepStrips(host);
+  keepStrips(host);   // 다른 화면에 갔다 돌아왔을 때만 위치를 되살린다
 
+  await showTab(host);
+}
+
+/** 고른 칸의 내용만 그린다 (칸막이는 건드리지 않는다) */
+async function showTab(host) {
   const body = host.querySelector('#a-body');
   body.innerHTML = '<div class="card"><div class="sk"></div></div>';
 
@@ -360,7 +374,7 @@ async function noticeView(body, host) {
       const fresh = await api.get('/api/bundle');
       S.bundle.notices = fresh.notices;
       toast('공지를 올렸습니다.', 'ok');
-      renderAdmin(host);
+      showTab(host);
     } catch (e2) { toast(e2.message, 'err'); e.target.disabled = false; }
   };
   body.querySelectorAll('[data-d]').forEach((btn) => {
@@ -369,7 +383,7 @@ async function noticeView(body, host) {
       await api.del(`/api/admin/notices/${btn.dataset.d}`);
       const fresh = await api.get('/api/bundle');
       S.bundle.notices = fresh.notices;
-      renderAdmin(host);
+      showTab(host);
     };
   });
 }
