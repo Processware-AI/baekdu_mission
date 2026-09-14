@@ -13,7 +13,7 @@ export default async function renderAdmin(host) {
   }
 
   host.innerHTML = `
-    <div class="filters" id="a-tab">
+    <div class="filters wrap" id="a-tab">
       <button data-v="stats" class="${tab === 'stats' ? 'on' : ''}">📊 현황</button>
       <button data-v="export" class="${tab === 'export' ? 'on' : ''}">📦 내보내기</button>
       <button data-v="people" class="${tab === 'people' ? 'on' : ''}">👥 참가자</button>

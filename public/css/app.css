@@ -259,6 +259,10 @@ textarea{resize:vertical; min-height:70px; line-height:1.5}
 .filters button{white-space:nowrap; padding:7px 13px; border-radius:999px; border:1px solid var(--line);
   background:var(--card); font-size:12.5px; font-weight:700; color:var(--muted); cursor:pointer}
 .filters button.on{background:var(--accent); color:#fff; border-color:transparent}
+/* 칸이 많아 가로로 넘겨야 하는 줄은, 넘긴 위치를 잃어버리기 쉽다.
+   (아이폰은 칸을 누르면 줄을 왼쪽 끝으로 되돌려 버린다)
+   칸 수가 정해져 있는 곳은 아예 두 줄로 접어 전부 보이게 둔다. */
+.filters.wrap{flex-wrap:wrap; overflow-x:visible; row-gap:6px}
 
 /* ── 랭킹 ─────────────────────────────────────────────────────── */
 .rank-row{display:flex; align-items:center; gap:11px; padding:10px 0; border-bottom:1px solid var(--line)}
