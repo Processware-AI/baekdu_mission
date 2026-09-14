@@ -218,7 +218,7 @@ export function openUploader({ placeSlug = null, mission = null } = {}) {
     if (!host) return;
     const term = q.trim();
     const mine = S.participants.filter((p) => p.id !== S.user.id);
-    const list = term ? mine.filter((p) => p.name.includes(term)) : sortNear(mine);
+    const list = byName(term ? mine.filter((p) => p.name.includes(term)) : mine);
     host.innerHTML = list.slice(0, 200).map((p) => `
       <button type="button" class="person ${sel.tags.has(p.id) ? 'on' : ''}" data-p="${p.id}">
         ${esc(p.name)}<small>${p.group ? `${p.group}조` : ''}</small></button>`).join('')
@@ -324,11 +324,13 @@ function dayGroups(places) {
   return out.filter((g) => g.items.length);
 }
 
-/** 같은 조 → 같은 호차 → 나머지 순으로 정렬 (실제로 옆에 있는 사람이 위로) */
-function sortNear(list) {
-  const g = S.user.group, b = S.user.bus;
-  return [...list].sort((x, y) => {
-    const s = (p) => (p.group === g ? 0 : p.bus === b ? 1 : 2);
-    return s(x) - s(y) || x.name.localeCompare(y.name, 'ko');
-  });
+/**
+ * 이름 가나다 순.
+ *
+ * 예전에는 같은 조·같은 호차를 위로 올렸는데, 사진에 함께 찍히는 사람은 조와
+ * 상관없이 섞인다. 그러면 아는 이름을 목록에서 눈으로 훑어 찾을 수가 없다.
+ * 언제나 같은 자리에 있는 편이 찾기 쉽다.
+ */
+function byName(list) {
+  return [...list].sort((x, y) => x.name.localeCompare(y.name, 'ko'));
 }
