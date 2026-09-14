@@ -1,6 +1,6 @@
 import { api } from '../api.js';
 import { S, missionMeta, refreshProgress } from '../state.js';
-import { esc, el, relTime, fmtBytes, toast, confirmSheet, keepStrips } from '../util.js';
+import { esc, el, relTime, fmtBytes, toast, confirmSheet } from '../util.js';
 import { openUploader } from './uploader.js';
 
 const F = { scope: 'all', place: '', mission: '', page: 1 };
@@ -10,7 +10,7 @@ export default async function renderGallery(host) {
   const b = S.bundle;
 
   host.innerHTML = `
-    <div class="filters" id="f-scope">
+    <div class="filters wrap" id="f-scope">
       <button data-v="all" class="${F.scope === 'all' ? 'on' : ''}">전체</button>
       <button data-v="mine" class="${F.scope === 'mine' ? 'on' : ''}">내가 올린</button>
       <button data-v="withMe" class="${F.scope === 'withMe' ? 'on' : ''}">내가 나온</button>
@@ -32,7 +32,7 @@ export default async function renderGallery(host) {
       </select>
     </div>
 
-    <div class="filters" id="f-mission">
+    <div class="filters wrap" id="f-mission">
       <button data-v="" class="${F.mission === '' ? 'on' : ''}">모든 미션</button>
       ${[...b.missions, ...b.adminMissions].map((m) =>
         `<button data-v="${m.key}" class="${F.mission === m.key ? 'on' : ''}">${m.emoji} ${esc(m.short)}</button>`).join('')}
@@ -51,7 +51,6 @@ export default async function renderGallery(host) {
   host.querySelector('#f-place').onchange = (e) => {
     F.place = e.target.value; F.page = 1; renderGallery(host);
   };
-  keepStrips(host);
 
   await load(host, true);
 }
