@@ -3,7 +3,7 @@ import { toast } from './util.js';
 const jsonHeaders = { 'Content-Type': 'application/json' };
 
 /** 휴대폰이 새 화면 파일을 받았는지 서버 로그로 확인하기 위한 표식 */
-export const APP_BUILD = '2026-09-05e';
+export const APP_BUILD = '2026-09-14a';
 
 /**
  * 세션이 끊겼을 때 로그인 화면으로 되돌리기.

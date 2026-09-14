@@ -1,5 +1,6 @@
 import { S } from '../state.js';
 import { esc } from '../util.js';
+import { APP_BUILD } from '../api.js';
 
 /**
  * 사용 가이드 — 앱을 처음 쓰는 분을 위한 설명서와 만든 사람 소개.
@@ -142,6 +143,7 @@ export default async function renderHelp(host) {
     </section>
 
     <p class="center muted small">
-      ICCA 산악회 백두산 여행 · 2026.09.10~13
+      ICCA 산악회 백두산 여행 · 2026.09.10~13<br>
+      <span style="opacity:.7">화면 버전 ${APP_BUILD}</span>
     </p>`;
 }
